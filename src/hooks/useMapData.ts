@@ -342,7 +342,7 @@ export const useMapData = () => {
       
       // Update district data with representative information
       setCongressionalDistricts(prevDistricts => {
-        return prevDistricts.map(district => {
+        const updatedDistricts = prevDistricts.map(district => {
           // Find matching representative by district number
           const representative = members.find(member => {
             // Extract district number from API response
@@ -351,14 +351,9 @@ export const useMapData = () => {
           });
           
           if (representative) {
-            // Parse the name into first and last name
-            const firstName = representative.name.split(',')[1]?.trim() || '';
-            const lastName = representative.name.split(',')[0]?.trim() || '';
-            const fullName = `${firstName} ${lastName}`.trim();
-            
             return {
               ...district,
-              representative: fullName, // Use the formatted full name
+              representative: representative.name,
               party: representative.party,
               photoUrl: representative.depiction?.imageUrl,
               contact: {
@@ -373,10 +368,9 @@ export const useMapData = () => {
           
           return district;
         });
+        
+        return updatedDistricts;
       });
-      
-      // Log the updated districts data for inspection
-      console.log('Congressional Districts with API data:', congressionalDistricts);
       
       console.log('Successfully updated congressional districts with representative data');
       
@@ -410,7 +404,7 @@ export const useMapData = () => {
     } finally {
       setIsLoadingCongressData(false);
     }
-  }, [congressDataRetryCount, congressionalDistricts]);
+  }, [congressDataRetryCount]);
 
   /**
    * Get ordinal suffix for a number (e.g., 1st, 2nd, 3rd)
