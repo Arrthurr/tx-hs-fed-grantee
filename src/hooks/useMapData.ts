@@ -341,7 +341,7 @@ export const useMapData = () => {
       console.log(`Received data for ${members.length} representatives`);
       
       // Update district data with representative information
-      setCongressionalDistricts(prevDistricts => {
+      const updatedDistricts = prevDistricts => {
         const updatedDistricts = prevDistricts.map(district => {
           // Find matching representative by district number
           const representative = members.find(member => {
@@ -370,7 +370,12 @@ export const useMapData = () => {
         });
         
         return updatedDistricts;
-      });
+      };
+      
+      setCongressionalDistricts(updatedDistricts);
+      
+      // Log the updated districts data for inspection
+      console.log('Congressional Districts with API data:', updatedDistricts(congressionalDistricts));
       
       console.log('Successfully updated congressional districts with representative data');
       
@@ -404,7 +409,7 @@ export const useMapData = () => {
     } finally {
       setIsLoadingCongressData(false);
     }
-  }, [congressDataRetryCount]);
+  }, [congressDataRetryCount, congressionalDistricts]);
 
   /**
    * Get ordinal suffix for a number (e.g., 1st, 2nd, 3rd)
