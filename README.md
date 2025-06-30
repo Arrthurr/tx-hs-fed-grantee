@@ -1,18 +1,18 @@
-# Texas Interactive Map
+# Texas Head Start Interactive Map
 
-A beautiful, production-ready interactive map of Texas built with React, TypeScript, and Google Maps API. This application showcases major cities, landmarks, and points of interest across the Lone Star State with smooth interactions and comprehensive controls.
+An interactive map application that visualizes Head Start and Early Head Start Federal Grantee Programs across Texas, along with congressional district boundaries. This tool helps policymakers and state officials analyze program distribution and political representation.
 
 ## 🌟 Features
 
-- **Interactive Google Maps Integration**: Full-featured map with zoom, pan, and navigation controls
-- **City Markers**: 12+ major Texas cities with detailed information popups
-- **Custom Controls**: Enhanced map controls with zoom, reset, and fit-to-markers functionality
-- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **Loading States**: Elegant loading animations and error handling
-- **Detailed City Information**: Population data, descriptions, and city classifications
-- **Modern UI**: Clean, professional design with Tailwind CSS
-- **TypeScript**: Full type safety and excellent developer experience
-- **Performance Optimized**: Efficient rendering and API usage
+- **Interactive Google Maps Integration**: Smooth, responsive map of Texas with custom styling
+- **Head Start Program Markers**: View all Head Start and Early Head Start program locations across Texas
+- **Congressional District Boundaries**: Toggle district boundaries with semi-transparent, color-coded overlays
+- **Detailed Information Popups**: Click on any marker or district to view comprehensive details
+- **Layer Controls**: Easily toggle between different data layers
+- **Responsive Design**: Optimized for desktop and tablet devices
+- **Search Functionality**: Find specific programs or districts by name, address, or representative
+- **Performance Optimized**: Efficiently handles 80+ program locations and 36 congressional districts
+- **Accessibility Compliant**: Built with WCAG guidelines in mind
 
 ## 🚀 Getting Started
 
@@ -36,7 +36,7 @@ A beautiful, production-ready interactive map of Texas built with React, TypeScr
 
 3. **Configure environment variables**:
    ```bash
-   cp .env.local.example .env.local
+   cp .env.example .env.local
    ```
    Edit `.env.local` and add your Google Maps API key:
    ```
@@ -65,95 +65,45 @@ Create a `.env.local` file in your project root with the following:
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 ```
 
-### Google Maps API Setup
-
-1. **Create a Google Cloud Project**:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a new project or select existing one
-
-2. **Enable Required APIs**:
-   - Navigate to "APIs & Services" > "Library"
-   - Search for and enable "Maps JavaScript API"
-   - Optionally enable "Places API" for enhanced features
-
-3. **Create API Key**:
-   - Go to "APIs & Services" > "Credentials"
-   - Click "Create Credentials" > "API Key"
-   - Copy the generated API key
-
-4. **Secure Your API Key** (Important for production):
-   - Click on your API key to edit it
-   - Under "Application restrictions", select "HTTP referrers"
-   - Add your domains:
-     - For development: `http://localhost:5173/*`
-     - For production: `https://yourdomain.com/*`
-
-### Common Issues and Solutions
-
-#### "API key not configured" Error
-- Ensure `.env.local` file exists in project root
-- Verify the variable name is exactly `VITE_GOOGLE_MAPS_API_KEY`
-- Restart the development server after creating/modifying `.env.local`
-
-#### "RefererNotAllowedMapError"
-- Add your domain to API key restrictions in Google Cloud Console
-- For local development, add `http://localhost:5173/*`
-
-#### "InvalidKeyMapError"
-- Double-check your API key is correct
-- Ensure Maps JavaScript API is enabled in Google Cloud Console
-
-## 🏗️ Architecture
-
-### Project Structure
+## 🏗️ Project Structure
 
 ```
 src/
 ├── components/           # React components
 │   ├── TexasMap.tsx     # Main map component
-│   ├── MapControls.tsx  # Custom map controls
+│   ├── MapControls.tsx  # Layer toggle controls
+│   ├── InfoWindow.tsx   # Information popups
 │   ├── LoadingSpinner.tsx
 │   └── ErrorDisplay.tsx
 ├── hooks/
-│   └── useGoogleMaps.ts # Custom Google Maps hook
+│   ├── useMapData.ts    # Data management hook
+│   └── useSearch.ts     # Search functionality hook
+├── data/
+│   ├── headStartPrograms.ts      # Program data processing
+│   └── congressionalDistricts.ts # District data processing
 ├── types/
 │   └── maps.ts          # TypeScript type definitions
-├── data/
-│   └── texasLocations.ts # City and location data
+├── utils/
+│   └── mapHelpers.ts    # Map utility functions
+├── styles/
+│   └── design-system.css # Custom design system
 └── App.tsx              # Main application component
 ```
 
-### Key Components
+## 📊 Data Sources
 
-- **TexasMap**: Main map component with Google Maps integration
-- **MapControls**: Enhanced controls for zoom, reset, and marker fitting
-- **LoadingSpinner**: Elegant loading states with Texas-themed styling
-- **ErrorDisplay**: User-friendly error handling with retry functionality and troubleshooting tips
+The application uses GeoJSON data for both Head Start programs and congressional districts:
+
+- **Head Start Programs**: Location data for all Head Start and Early Head Start federal grantee programs in Texas
+- **Congressional Districts**: Boundary data for all 36 Texas congressional districts
 
 ## 🎨 Design Features
 
-- **Apple-level Design Aesthetics**: Clean, minimal, and sophisticated
-- **Smooth Animations**: Subtle transitions and micro-interactions
-- **Responsive Layout**: Adapts beautifully to all screen sizes
-- **Custom Map Styling**: Enhanced visual appeal with custom map themes
-- **Intuitive Controls**: Easy-to-use interface with clear visual feedback
-
-## 📍 Featured Cities
-
-The map includes 12 major Texas cities:
-
-- Houston (Population: 2.3M+)
-- San Antonio (Population: 1.5M+)
-- Dallas (Population: 1.3M+)
-- Austin (Population: 965K+)
-- Fort Worth (Population: 918K+)
-- El Paso (Population: 695K+)
-- Arlington (Population: 394K+)
-- Corpus Christi (Population: 317K+)
-- Plano (Population: 285K+)
-- Lubbock (Population: 258K+)
-- Laredo (Population: 255K+)
-- Irving (Population: 256K+)
+- **Texas-Themed Color Palette**: Professional blue and orange color scheme
+- **Intuitive Layer Controls**: Easy-to-use toggles for different data layers
+- **Informative Popups**: Well-designed information windows with comprehensive details
+- **Responsive Layout**: Adapts to different screen sizes
+- **Accessible Design**: High-contrast colors and keyboard navigation support
 
 ## 🛠️ Technologies Used
 
@@ -165,61 +115,62 @@ The map includes 12 major Texas cities:
 - **Vite**: Fast, modern build tool
 - **Lucide React**: Beautiful, customizable icons
 
+## 🧪 Testing
+
+The application includes comprehensive test coverage:
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test file
+npm test -- src/components/TexasMap.test.tsx
+
+# Run end-to-end tests
+npm run test:e2e
+```
+
+## 🔍 Key Features in Detail
+
+### Head Start Programs Layer
+
+- Displays all Head Start and Early Head Start program locations
+- Provides detailed information on each program including:
+  - Program name
+  - Full address
+  - Grantee organization
+  - Annual funding amount (when available)
+
+### Congressional Districts Layer
+
+- Shows all 36 Texas congressional districts with color-coded boundaries
+- Provides information on each district including:
+  - District number
+  - Representative name
+  - Party affiliation
+  - Population data
+  - Contact information
+
+### Layer Controls
+
+- Toggle Head Start Programs visibility
+- Toggle Congressional Districts visibility
+- Toggle District Boundaries visibility
+- Clear visual indicators of current layer state
+
+### Search Functionality
+
+- Search for programs by name, address, or grantee
+- Search for districts by number or representative name
+- Results display with count and category breakdown
+- Map automatically centers on selected search result
+
 ## 📱 Browser Support
 
 - Chrome 90+
 - Firefox 88+
 - Safari 14+
 - Edge 90+
-
-## 🔧 API Configuration
-
-### Required Google Maps APIs
-
-1. **Maps JavaScript API**: Core mapping functionality
-2. **Places API**: Enhanced location data (optional)
-
-### API Key Security Best Practices
-
-- **Development**: Restrict to `http://localhost:5173/*`
-- **Production**: Restrict to your specific domain(s)
-- **Enable only required APIs**: Maps JavaScript API (required), Places API (optional)
-- **Monitor usage**: Set up billing alerts in Google Cloud Console
-- **Regular rotation**: Consider rotating API keys periodically
-
-### Environment Variables Security
-
-- Never commit `.env.local` to version control
-- Use different API keys for development and production
-- Consider using environment-specific restrictions
-
-## 📈 Performance Optimizations
-
-- Lazy loading of map components
-- Efficient marker management
-- Debounced user interactions
-- Optimized bundle size with Vite
-- Preconnect to Google Maps domains
-- Error boundaries for graceful failure handling
-
-## 🚀 Deployment
-
-The application is ready for deployment to any static hosting service:
-
-### Netlify
-1. Build the project: `npm run build`
-2. Deploy the `dist` folder
-3. Add environment variables in Netlify dashboard
-
-### Vercel
-1. Connect your Git repository
-2. Add `VITE_GOOGLE_MAPS_API_KEY` in environment variables
-3. Deploy automatically on push
-
-### Other Platforms
-- **GitHub Pages**: Upload `dist` folder contents
-- **AWS S3**: Configure as static website
-- **Firebase Hosting**: Use Firebase CLI
 
 ## 🤝 Contributing
 
@@ -234,14 +185,6 @@ The application is ready for deployment to any static hosting service:
 
 This project is open source and available under the [MIT License](LICENSE).
 
-## 🙏 Acknowledgments
-
-- Google Maps Platform for excellent mapping services
-- Texas cities data from official sources
-- Lucide React for beautiful icons
-- Tailwind CSS for utility-first styling
-- @vis.gl/react-google-maps for modern React integration
-
 ---
 
-Built with ❤️ for exploring the great state of Texas!
+Built with ❤️ for Texas Head Start program analysis and policy planning.
