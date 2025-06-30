@@ -341,8 +341,8 @@ export const useMapData = () => {
       console.log(`Received data for ${members.length} representatives`);
       
       // Update district data with representative information
-      const updatedDistricts = prevDistricts => {
-        const updatedDistricts = prevDistricts.map(district => {
+      setCongressionalDistricts(prevDistricts => {
+        return prevDistricts.map(district => {
           // Find matching representative by district number
           const representative = members.find(member => {
             // Extract district number from API response
@@ -351,9 +351,14 @@ export const useMapData = () => {
           });
           
           if (representative) {
+            // Parse the name into first and last name
+            const firstName = representative.name.split(',')[1]?.trim() || '';
+            const lastName = representative.name.split(',')[0]?.trim() || '';
+            const fullName = `${firstName} ${lastName}`.trim();
+            
             return {
               ...district,
-              representative: representative.name,
+              representative: fullName, // Use the formatted full name
               party: representative.party,
               photoUrl: representative.depiction?.imageUrl,
               contact: {
@@ -368,14 +373,10 @@ export const useMapData = () => {
           
           return district;
         });
-        
-        return updatedDistricts;
-      };
-      
-      setCongressionalDistricts(updatedDistricts);
+      });
       
       // Log the updated districts data for inspection
-      console.log('Congressional Districts with API data:', updatedDistricts(congressionalDistricts));
+      console.log('Congressional Districts with API data:', congressionalDistricts);
       
       console.log('Successfully updated congressional districts with representative data');
       
