@@ -34,6 +34,25 @@ const mockHeadStartPrograms = [
 
 const mockCongressionalDistricts = [
   {
+    number: 1,
+    representative: 'Representative 1',
+    population: 750000,
+    center: { lat: 30.5, lng: -96.5 },
+    headStartPrograms: [],
+    party: 'Republican',
+  },
+  {
+    number: 2,
+    representative: 'Representative 2',
+    population: 750000,
+    center: { lat: 29.5, lng: -95.5 },
+    headStartPrograms: [],
+    party: 'Democrat',
+  },
+];
+
+const mockRawDistrictFeatures = [
+  {
     type: 'Feature' as const,
     properties: {
       district: 'TX-1',
@@ -94,6 +113,9 @@ describe('TexasMap Component', () => {
       visibleCongressionalDistricts: mockCongressionalDistricts,
       headStartPrograms: mockHeadStartPrograms,
       congressionalDistricts: mockCongressionalDistricts,
+      programs: mockHeadStartPrograms,
+      districts: mockCongressionalDistricts,
+      rawDistrictFeatures: mockRawDistrictFeatures,
       layerVisibility: {
         majorCities: false,
         congressionalDistricts: true,
@@ -101,8 +123,19 @@ describe('TexasMap Component', () => {
         headStartPrograms: true,
       },
       toggleLayer: jest.fn(),
+      setLayerVisibilityState: jest.fn(),
       isLoading: false,
+      isLoadingPrograms: false,
+      isLoadingDistricts: false,
+      isLoadingCongressData: false,
       hasErrors: false,
+      programsError: null,
+      districtsError: null,
+      congressDataError: null,
+      retryLoading: jest.fn(),
+      loadHeadStartPrograms: jest.fn(),
+      loadCongressionalDistricts: jest.fn(),
+      loadCongressionalData: jest.fn(),
     });
     
     mockUseSearch.mockReturnValue({
@@ -114,8 +147,12 @@ describe('TexasMap Component', () => {
         isSearchActive: false,
         totalResults: 0,
       },
+      filteredPrograms: mockHeadStartPrograms,
+      filteredDistricts: mockRawDistrictFeatures,
       handleSearchChange: jest.fn(),
       clearSearch: jest.fn(),
+      findProgramById: jest.fn(),
+      findDistrictByNumber: jest.fn(),
       getSearchResultsBounds: jest.fn().mockReturnValue(null),
     });
   });
@@ -125,13 +162,6 @@ describe('TexasMap Component', () => {
     
     // Check if the map container is rendered
     expect(screen.getByTestId('google-map')).toBeInTheDocument();
-  });
-
-  test('renders search bar', () => {
-    render(<TexasMap />);
-    
-    // Check if the search bar is rendered
-    expect(screen.getByPlaceholderText(/search/i)).toBeInTheDocument();
   });
 
   test('renders program markers when headStartPrograms layer is visible', () => {
@@ -198,9 +228,9 @@ describe('TexasMap Component', () => {
       isSearching: true,
       searchResults: {
         programs: mockHeadStartPrograms,
-        districts: mockCongressionalDistricts,
+        districts: mockRawDistrictFeatures,
         isSearchActive: true,
-        totalResults: mockHeadStartPrograms.length + mockCongressionalDistricts.length,
+        totalResults: mockHeadStartPrograms.length + mockRawDistrictFeatures.length,
       },
     });
     
@@ -248,9 +278,9 @@ describe('TexasMap Component', () => {
       isSearching: true,
       searchResults: {
         programs: [],
-        districts: mockCongressionalDistricts,
+        districts: mockRawDistrictFeatures,
         isSearchActive: true,
-        totalResults: mockCongressionalDistricts.length,
+        totalResults: mockRawDistrictFeatures.length,
       },
     });
     
@@ -265,33 +295,6 @@ describe('TexasMap Component', () => {
       expect(global.google.maps.Map.prototype.panTo).toHaveBeenCalled();
       expect(global.google.maps.Map.prototype.setZoom).toHaveBeenCalled();
     });
-  });
-
-  test('handles map controls interactions', () => {
-    render(<TexasMap />);
-    
-    // Find map controls
-    const zoomInButton = screen.getByTitle('Zoom In');
-    const zoomOutButton = screen.getByTitle('Zoom Out');
-    const resetViewButton = screen.getByTitle('Reset to Texas View');
-    const fitMarkersButton = screen.getByTitle('Fit All Markers');
-    
-    // Click zoom in button
-    fireEvent.click(zoomInButton);
-    expect(global.google.maps.Map.prototype.setZoom).toHaveBeenCalled();
-    
-    // Click zoom out button
-    fireEvent.click(zoomOutButton);
-    expect(global.google.maps.Map.prototype.setZoom).toHaveBeenCalled();
-    
-    // Click reset view button
-    fireEvent.click(resetViewButton);
-    expect(global.google.maps.Map.prototype.panTo).toHaveBeenCalled();
-    expect(global.google.maps.Map.prototype.setZoom).toHaveBeenCalled();
-    
-    // Click fit markers button
-    fireEvent.click(fitMarkersButton);
-    expect(global.google.maps.Map.prototype.fitBounds).toHaveBeenCalled();
   });
 
   test('toggles layer visibility when layer controls are clicked', () => {

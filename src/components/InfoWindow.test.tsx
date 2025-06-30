@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { InfoWindow } from '@vis.gl/react-google-maps';
-import { HeadStartProgram, CongressionalDistrictFeature } from '../types/maps';
+import { HeadStartProgram, CongressionalDistrict } from '../types/maps';
 
 // Mock the InfoWindow component from @vis.gl/react-google-maps
 jest.mock('@vis.gl/react-google-maps', () => ({
@@ -72,26 +72,34 @@ const ProgramInfoWindow: React.FC<{
 
 // Test component to render InfoWindow with district data
 const DistrictInfoWindow: React.FC<{
-  district: CongressionalDistrictFeature;
+  district: CongressionalDistrict;
   onClose: () => void;
 }> = ({ district, onClose }) => (
   <InfoWindow
-    position={{ 
-      lat: district.geometry.coordinates[0][0][1] as number, 
-      lng: district.geometry.coordinates[0][0][0] as number
-    }}
+    position={district.center}
     onCloseClick={onClose}
     maxWidth={400}
   >
     <div className="info-window">
       <div className="bg-gradient-to-r from-district-primary to-district-secondary text-white p-4 rounded-t-lg">
         <h3 className="text-lg font-bold text-white mb-1">
-          {district.properties.name}
+          Texas {district.number}{getOrdinalSuffix(district.number)} Congressional District
         </h3>
         <div className="flex items-center space-x-2">
           <span className="px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
-            District {district.properties.districtNumber}
+            District {district.number}
           </span>
+          {district.party && (
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              district.party === 'Republican' 
+                ? 'bg-red-100 text-red-800' 
+                : district.party === 'Democrat'
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-gray-100 text-gray-800'
+            }`}>
+              {district.party}
+            </span>
+          )}
         </div>
       </div>
       <div className="info-window-content">
@@ -99,7 +107,7 @@ const DistrictInfoWindow: React.FC<{
           <div className="flex items-start space-x-3">
             <div className="flex-1">
               <p className="text-sm font-medium text-tx-gray-900">Representative</p>
-              <p className="text-sm text-tx-gray-600">{district.properties.representative}</p>
+              <p className="text-sm text-tx-gray-600">{district.representative}</p>
             </div>
           </div>
           
@@ -107,15 +115,57 @@ const DistrictInfoWindow: React.FC<{
             <div className="flex-1">
               <p className="text-sm font-medium text-tx-gray-900">District Area</p>
               <p className="text-sm text-tx-gray-600">
-                Congressional District {district.properties.districtNumber}
+                Congressional District {district.number}
               </p>
             </div>
           </div>
+          
+          {district.population && (
+            <div className="flex items-start space-x-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-tx-gray-900">Population</p>
+                <p className="text-sm text-tx-gray-600">
+                  {district.population.toLocaleString()}
+                </p>
+              </div>
+            </div>
+          )}
+          
+          {district.contact && (
+            <div className="flex items-start space-x-3">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-tx-gray-900">Contact</p>
+                {district.contact.phone && (
+                  <p className="text-sm text-tx-gray-600">{district.contact.phone}</p>
+                )}
+                {district.contact.email && (
+                  <p className="text-sm text-tx-gray-600">{district.contact.email}</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   </InfoWindow>
 );
+
+// Helper function to get ordinal suffix
+const getOrdinalSuffix = (num: number): string => {
+  const j = num % 10;
+  const k = num % 100;
+  
+  if (j === 1 && k !== 11) {
+    return 'st';
+  }
+  if (j === 2 && k !== 12) {
+    return 'nd';
+  }
+  if (j === 3 && k !== 13) {
+    return 'rd';
+  }
+  return 'th';
+};
 
 describe('InfoWindow Components', () => {
   // Sample test data
@@ -130,25 +180,21 @@ describe('InfoWindow Components', () => {
     funding: 1500000,
   };
 
-  const mockDistrict: CongressionalDistrictFeature = {
-    type: 'Feature',
-    properties: {
-      district: 'TX-1',
-      name: 'Texas 1st Congressional District',
-      representative: 'Representative Name',
-      districtNumber: 1,
-      state: 'TX',
+  const mockDistrict: CongressionalDistrict = {
+    number: 1,
+    representative: 'Representative Name',
+    population: 750000,
+    center: { lat: 30.5, lng: -97.5 },
+    party: 'Republican',
+    headStartPrograms: [],
+    photoUrl: 'https://example.com/photo.jpg',
+    contact: {
+      phone: '(555) 123-4567',
+      email: 'rep@example.com',
+      website: 'https://example.com',
+      office: '123 Capitol Building'
     },
-    geometry: {
-      type: 'Polygon',
-      coordinates: [[
-        [-97.0, 30.0],
-        [-97.0, 31.0],
-        [-96.0, 31.0],
-        [-96.0, 30.0],
-        [-97.0, 30.0],
-      ]],
-    },
+    committees: ['Committee 1', 'Committee 2']
   };
 
   const onClose = jest.fn();
@@ -218,17 +264,29 @@ describe('InfoWindow Components', () => {
       expect(screen.getByTestId('info-window')).toBeInTheDocument();
       
       // Check if district name is displayed
-      expect(screen.getByText(mockDistrict.properties.name)).toBeInTheDocument();
+      expect(screen.getByText(/Texas 1st Congressional District/)).toBeInTheDocument();
       
       // Check if district number is displayed
-      expect(screen.getByText(`District ${mockDistrict.properties.districtNumber}`)).toBeInTheDocument();
+      expect(screen.getByText(`District ${mockDistrict.number}`)).toBeInTheDocument();
       
       // Check if representative is displayed
-      expect(screen.getByText(mockDistrict.properties.representative)).toBeInTheDocument();
+      expect(screen.getByText(mockDistrict.representative)).toBeInTheDocument();
       
       // Check if district area is displayed
       expect(screen.getByText('District Area')).toBeInTheDocument();
-      expect(screen.getByText(`Congressional District ${mockDistrict.properties.districtNumber}`)).toBeInTheDocument();
+      expect(screen.getByText(`Congressional District ${mockDistrict.number}`)).toBeInTheDocument();
+      
+      // Check if population is displayed
+      expect(screen.getByText('Population')).toBeInTheDocument();
+      expect(screen.getByText('750,000')).toBeInTheDocument();
+      
+      // Check if party is displayed
+      expect(screen.getByText('Republican')).toBeInTheDocument();
+      
+      // Check if contact info is displayed
+      expect(screen.getByText('Contact')).toBeInTheDocument();
+      expect(screen.getByText('(555) 123-4567')).toBeInTheDocument();
+      expect(screen.getByText('rep@example.com')).toBeInTheDocument();
     });
 
     test('calls onClose when close button is clicked', () => {
@@ -236,6 +294,21 @@ describe('InfoWindow Components', () => {
       
       fireEvent.click(screen.getByTestId('info-window'));
       expect(onClose).toHaveBeenCalledTimes(1);
+    });
+    
+    test('handles district without party data', () => {
+      const districtWithoutParty = { ...mockDistrict, party: undefined };
+      render(<DistrictInfoWindow district={districtWithoutParty} onClose={onClose} />);
+      
+      expect(screen.queryByText('Republican')).not.toBeInTheDocument();
+    });
+    
+    test('handles district without contact data', () => {
+      const districtWithoutContact = { ...mockDistrict, contact: undefined };
+      render(<DistrictInfoWindow district={districtWithoutContact} onClose={onClose} />);
+      
+      expect(screen.queryByText('Contact')).not.toBeInTheDocument();
+      expect(screen.queryByText('(555) 123-4567')).not.toBeInTheDocument();
     });
   });
 });
