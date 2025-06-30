@@ -316,7 +316,7 @@ const App: React.FC = () => {
               
               <div className="relative z-10">
                 <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
-                  Map of Federal Grantee Programs in Texas
+                  Federal Grantee Head Start Programs
                 </h2>
                 <p className="text-tx-blue-100 text-sm leading-relaxed">
                   Click on program markers to view details. Toggle layers to explore Head Start programs and congressional districts.
