@@ -150,6 +150,10 @@ describe('useMapData Hook', () => {
     
     // Check if districts were loaded
     expect(result.current.congressionalDistricts.length).toBeGreaterThan(0);
+    
+    // Check if rawDistrictFeatures were loaded
+    expect(result.current.rawDistrictFeatures).toBeDefined();
+    expect(Array.isArray(result.current.rawDistrictFeatures)).toBe(true);
   });
 
   test('handles fetch errors for Head Start programs', async () => {
