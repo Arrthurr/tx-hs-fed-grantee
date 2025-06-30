@@ -1,0 +1,690 @@
+[
+  {
+    "name": "Opportunities For Williamson And Burnet Counties",
+    "address": "604 High Tech Dr, Georgetown, TX 78626",
+    "coordinates": {
+      "lat": 30.6190576,
+      "lng": -97.6690435
+    }
+  },
+  {
+    "name": "Greater East Texas Community Action Program",
+    "address": "1902 Old Tyler Rd, Nacogdoches, TX 75964",
+    "coordinates": {
+      "lat": 31.6196926,
+      "lng": -94.6624466
+    }
+  },
+  {
+    "name": "Child Inc",
+    "address": "818 East 53rd Street, Austin, TX 78751",
+    "coordinates": {
+      "lat": 30.3138753,
+      "lng": -97.7141341
+    }
+  },
+  {
+    "name": "Family Service Association of San Antonio, Inc",
+    "address": "702 San Pedro Avenue, San Antonio, TX 78212",
+    "coordinates": {
+      "lat": 29.4397125,
+      "lng": -98.4982673
+    }
+  },
+  {
+    "name": "Innovative Network of Knowledge",
+    "address": "17319 San Pedro Ave, San Antonio. TX 78232",
+    "coordinates": {
+      "lat": 29.6003178,
+      "lng": -98.4741342
+    }
+  },
+  {
+    "name": "Region VII Education Service Center",
+    "address": "1909 N Longview, St, Kilgore, TX 75662",
+    "coordinates": {
+      "lat": 32.402249,
+      "lng": -94.8619983
+    }
+  },
+  {
+    "name": "Community Council of South Central Texas, Inc",
+    "address": "801 N Highway 123 Bypass, Seguin, TX 78155",
+    "coordinates": {
+      "lat": 29.5768414,
+      "lng": -97.9409206
+    }
+  },
+  {
+    "name": "Cen-Tex Family Services Inc",
+    "address": "2402 Main St, Bastrop, TX 78602",
+    "coordinates": {
+      "lat": 30.1285071,
+      "lng": -97.3208884
+    }
+  },
+  {
+    "name": "Education Service Center Region 19",
+    "address": "11670 Chito Samaniego, El Paso, TX 79936",
+    "coordinates": {
+      "lat": 31.7337415,
+      "lng": -106.3060043
+    }
+  },
+  {
+    "name": "Motivation Education & Training, Inc",
+    "address": "22551 Gene Campbell Blvd, New Caney, TX 77357",
+    "coordinates": {
+      "lat": 30.1712811,
+      "lng": -95.24261539999999
+    }
+  },
+  {
+    "name": "Beaumont Independent School District",
+    "address": "3395 Harrison Avenue, Beaumont, TX 77706",
+    "coordinates": {
+      "lat": 30.0886222,
+      "lng": -94.1377079
+    }
+  },
+  {
+    "name": "Alabama-Coushatta Reservation Tribe of Texas Head Start",
+    "address": "147 Daycare Rd, Livingston, TX 77351",
+    "coordinates": {
+      "lat": 30.71937699999999,
+      "lng": -94.7081005
+    }
+  },
+  {
+    "name": "Kickapoo Traditional Tribe of Texas",
+    "address": "25 Standing Rock Ln, Eagle Pass, TX 78852",
+    "coordinates": {
+      "lat": 28.6145516,
+      "lng": -100.4356497
+    }
+  },
+  {
+    "name": "Rolling Plains Management Corporation",
+    "address": "118 1st St, Crowell, TX 79227",
+    "coordinates": {
+      "lat": 33.9849531,
+      "lng": -99.7233301
+    }
+  },
+  {
+    "name": "Brazos Valley Community Action Program",
+    "address": "4001 E 29th St, Bryan, TX 77802",
+    "coordinates": {
+      "lat": 30.6461334,
+      "lng": -96.33149709999999
+    }
+  },
+  {
+    "name": "Community Action Corporation of South Texas",
+    "address": "204 E 1st St, Alice, TX 78332",
+    "coordinates": {
+      "lat": 27.750922,
+      "lng": -98.0752497
+    }
+  },
+  {
+    "name": "Community Action, Inc. of Central Texas",
+    "address": "215 S Reimer Ave, San Marcos, TX 78666",
+    "coordinates": {
+      "lat": 29.8501697,
+      "lng": -97.9736616
+    }
+  },
+  {
+    "name": "Community Services Of Northeast Texas, Inc",
+    "address": "304 E Houston St, Linden, TX 75563",
+    "coordinates": {
+      "lat": 33.0109901,
+      "lng": -94.3620731
+    }
+  },
+  {
+    "name": "Gulf Coast Community Services Association",
+    "address": "9320 Kirby Drive, Houston, TX 77054",
+    "coordinates": {
+      "lat": 29.6690827,
+      "lng": -95.4149821
+    }
+  },
+  {
+    "name": "Hill Country Community Action Association, Inc",
+    "address": "2905 W Wallace St, San Saba, TX 76877",
+    "coordinates": {
+      "lat": 31.1984788,
+      "lng": -98.7506327
+    }
+  },
+  {
+    "name": "Nueces County Community Action Agency",
+    "address": "101 South Padre Island Dr, Corpus Christi, TX 78405",
+    "coordinates": {
+      "lat": 27.763669,
+      "lng": -97.46891500000001
+    }
+  },
+  {
+    "name": "South Plains Community Action Association, Inc",
+    "address": "411 Austin St, Levelland, TX 79336",
+    "coordinates": {
+      "lat": 33.5866439,
+      "lng": -102.372516
+    }
+  },
+  {
+    "name": "Tri-County Community Action, Inc",
+    "address": "214 Nacogdoches St, Center, TX 75935",
+    "coordinates": {
+      "lat": 31.7937912,
+      "lng": -94.1842485
+    }
+  },
+  {
+    "name": "Cornerstone Community Action Agency",
+    "address": "114 Needham St, Coleman, TX 76834",
+    "coordinates": {
+      "lat": 31.8149153,
+      "lng": -99.4237277
+    }
+  },
+  {
+    "name": "Economic Opportunities Advancement Corporation of Planning Region XI",
+    "address": "500 Franklin Ave, Waco, TX 76701",
+    "coordinates": {
+      "lat": 31.5556783,
+      "lng": -97.13091639999999
+    }
+  },
+  {
+    "name": "West Texas Opportunities",
+    "address": "603 N 4th St, Lamesa, TX 79331",
+    "coordinates": {
+      "lat": 32.7353968,
+      "lng": -101.9553726
+    }
+  },
+  {
+    "name": "Pecos County Community Action Agency",
+    "address": "600 S Young St, Fort Stockton, TX 79735",
+    "coordinates": {
+      "lat": 30.8802803,
+      "lng": -102.882819
+    }
+  },
+  {
+    "name": "Webb County Head Start",
+    "address": "5904 West Dr, Laredo, TX 78041",
+    "coordinates": {
+      "lat": 27.5559908,
+      "lng": -99.483972
+    }
+  },
+  {
+    "name": "City of San Antonio",
+    "address": "100 W Houston St, San Antonio, TX 78205",
+    "coordinates": {
+      "lat": 29.42625919999999,
+      "lng": -98.49412099999999
+    }
+  },
+  {
+    "name": "Galena Park ISD",
+    "address": "1908 2nd St, Galena Park, TX 77547",
+    "coordinates": {
+      "lat": 29.7337499,
+      "lng": -95.2409831
+    }
+  },
+  {
+    "name": "Abilene ISD",
+    "address": "241 Pine St, Abilene, TX 79601",
+    "coordinates": {
+      "lat": 32.4508067,
+      "lng": -99.7321508
+    }
+  },
+  {
+    "name": "Aldine ISD",
+    "address": "9999 Veterans Memorial Dr, Houston, TX 77038",
+    "coordinates": {
+      "lat": 29.9098296,
+      "lng": -95.4397891
+    }
+  },
+  {
+    "name": "College Station ISD",
+    "address": "1812 Welsh Ave, College Station, TX 77840",
+    "coordinates": {
+      "lat": 30.59276209999999,
+      "lng": -96.3216503
+    }
+  },
+  {
+    "name": "Mt Pleasant ISD",
+    "address": "1602 W Ferguson Rd, Mount Pleasant, TX 75455",
+    "coordinates": {
+      "lat": 33.1587307,
+      "lng": -94.984746
+    }
+  },
+  {
+    "name": "Austin ISD",
+    "address": "4000 S Interstate 35, Austin, TX 78704",
+    "coordinates": {
+      "lat": 30.218398,
+      "lng": -97.7526534
+    }
+  },
+  {
+    "name": "Bonham ISD",
+    "address": "201 E 10th St, Bonham, TX 75418",
+    "coordinates": {
+      "lat": 33.5829944,
+      "lng": -96.1771864
+    }
+  },
+  {
+    "name": "Cooper ISD",
+    "address": "1401 SW 8th St, Cooper, TX 75432",
+    "coordinates": {
+      "lat": 33.3632602,
+      "lng": -95.6920974
+    }
+  },
+  {
+    "name": "Denton ISD",
+    "address": "901 Audra Lane, Denton, TX 76209",
+    "coordinates": {
+      "lat": 33.2226192,
+      "lng": -97.10903049999999
+    }
+  },
+  {
+    "name": "Detroit ISD Head Start",
+    "address": "230 Third St NW, Detroit, TX 75436",
+    "coordinates": {
+      "lat": 33.6626191,
+      "lng": -95.26737759999999
+    }
+  },
+  {
+    "name": "Greenville ISD",
+    "address": "2504 Carver St, Greenville, TX 75401",
+    "coordinates": {
+      "lat": 33.1395602,
+      "lng": -96.1336733
+    }
+  },
+  {
+    "name": "Hitchcock ISD",
+    "address": "5701 FM 2004 Road, Hitchcock, TX 77563",
+    "coordinates": {
+      "lat": 29.3637805,
+      "lng": -95.02978
+    }
+  },
+  {
+    "name": "Kerrville ISD Early Childhood Center",
+    "address": "1011 3rd St, Kerrville, TX 78028",
+    "coordinates": {
+      "lat": 30.0469127,
+      "lng": -99.1309366
+    }
+  },
+  {
+    "name": "Lubbock ISD",
+    "address": "1628 19th St, Lubbock, TX 79401",
+    "coordinates": {
+      "lat": 33.5785421,
+      "lng": -101.8546025
+    }
+  },
+  {
+    "name": "Paris ISD",
+    "address": "1350 NE Sixth Street NE, Paris, TX 75460",
+    "coordinates": {
+      "lat": 33.6609389,
+      "lng": -95.55551299999999
+    }
+  },
+  {
+    "name": "Plano ISD",
+    "address": "2700 W. 15th Street, Plano, TX 75075",
+    "coordinates": {
+      "lat": 33.0184556,
+      "lng": -96.74613749999999
+    }
+  },
+  {
+    "name": "Port Arthur ISD",
+    "address": "1100 Jefferson Dr, Port Arthur, TX 77642",
+    "coordinates": {
+      "lat": 29.9169062,
+      "lng": -93.9052315
+    }
+  },
+  {
+    "name": "San Felipe Del Rio Consolidated ISD",
+    "address": "2003 N Main St, Del Rio, TX 78840",
+    "coordinates": {
+      "lat": 29.3820438,
+      "lng": -100.9105513
+    }
+  },
+  {
+    "name": "South San Antonio ISD",
+    "address": "1450 Gillette Blvd, San Antonio, TX 78224",
+    "coordinates": {
+      "lat": 29.3294647,
+      "lng": -98.5434415
+    }
+  },
+  {
+    "name": "Sulphur Springs ISD",
+    "address": "600 Calvert St, Sulphur Springs, TX 75482",
+    "coordinates": {
+      "lat": 33.1334559,
+      "lng": -95.58703779999999
+    }
+  },
+  {
+    "name": "W. H. Burnett Elementary",
+    "address": "921 S Rockwall Ave, Terrell, TX 75160",
+    "coordinates": {
+      "lat": 32.7271952,
+      "lng": -96.28190599999999
+    }
+  },
+  {
+    "name": "Texas City ISD",
+    "address": "1805 13th Ave N, Texas City, TX 77590",
+    "coordinates": {
+      "lat": 29.3970321,
+      "lng": -94.9223317
+    }
+  },
+  {
+    "name": "Tyler ISD",
+    "address": "807 W Glenwood Blvd, Tyler, TX 75701",
+    "coordinates": {
+      "lat": 32.3319795,
+      "lng": -95.3093237
+    }
+  },
+  {
+    "name": "West Orange-Cove Consolidated ISD",
+    "address": "801 Cordrey St, Orange, TX 77630",
+    "coordinates": {
+      "lat": 30.1101147,
+      "lng": -93.7374897
+    }
+  },
+  {
+    "name": "Upbring",
+    "address": "8305 Cross Park Dr, Austin, TX 78754",
+    "coordinates": {
+      "lat": 30.33613009999999,
+      "lng": -97.6695606
+    }
+  },
+  {
+    "name": "Brazoria County Head Start Early Learning Schools, Inc",
+    "address": "651 West Miller Street, Angleton, TX 77515",
+    "coordinates": {
+      "lat": 29.1705486,
+      "lng": -95.4400311
+    }
+  },
+  {
+    "name": "Lumin Education",
+    "address": "9507 Overlake Dr, Dallas, TX 75220",
+    "coordinates": {
+      "lat": 32.8565324,
+      "lng": -96.86868059999999
+    }
+  },
+  {
+    "name": "North Texas Parent & Child Development, Inc",
+    "address": "500 Flood St, Wichita Falls, TX 76301",
+    "coordinates": {
+      "lat": 33.9154892,
+      "lng": -98.4802409
+    }
+  },
+  {
+    "name": "SER-Jobs for Progress National, Inc",
+    "address": "100 E Royal Lane, Irving, TX 75039",
+    "coordinates": {
+      "lat": 32.894489,
+      "lng": -96.943643
+    }
+  },
+  {
+    "name": "AVANCE, Inc",
+    "address": "4281 Dacoma St, Houston, TX 77092",
+    "coordinates": {
+      "lat": 29.8088889,
+      "lng": -95.4506718
+    }
+  },
+  {
+    "name": "AVANCE, Inc",
+    "address": "824 Broadway St, San Antonio, TX 78215",
+    "coordinates": {
+      "lat": 29.4331562,
+      "lng": -98.48157300000001
+    }
+  },
+  {
+    "name": "AVANCE-San Antonio, Inc",
+    "address": "934 Flanders Ave, San Antonio, TX 78211",
+    "coordinates": {
+      "lat": 29.3740945,
+      "lng": -98.51863859999999
+    }
+  },
+  {
+    "name": "BakerRipley",
+    "address": "4450 Harrisburg Blvd, Houston, TX 77011",
+    "coordinates": {
+      "lat": 29.743507,
+      "lng": -95.33026129999999
+    }
+  },
+  {
+    "name": "Center for Transforming Lives",
+    "address": "512 W 4th St, Fort Worth, TX 76102",
+    "coordinates": {
+      "lat": 32.752982,
+      "lng": -97.33493610000001
+    }
+  },
+  {
+    "name": "Child Care Associates",
+    "address": "3000 E Belknap St, Fort Worth, TX 76111",
+    "coordinates": {
+      "lat": 32.7713961,
+      "lng": -97.3038281
+    }
+  },
+  {
+    "name": "ChildCareGroup",
+    "address": "3000 Pegasus Park Drive, Dallas, TX 75247",
+    "coordinates": {
+      "lat": 32.8087642,
+      "lng": -96.86035369999999
+    }
+  },
+  {
+    "name": "Concho Valley Council of Governments",
+    "address": "5430 Link Rd, San Angelo, TX 76904",
+    "coordinates": {
+      "lat": 31.4031812,
+      "lng": -100.4346463
+    }
+  },
+  {
+    "name": "Harris County Department of Education",
+    "address": "6300 Irvington Blvd, Houston, TX 77022",
+    "coordinates": {
+      "lat": 29.8159889,
+      "lng": -95.3606712
+    }
+  },
+  {
+    "name": "Head Start of Greater Dallas, Inc",
+    "address": "3954 Gannon Lane, Dallas, TX 75237",
+    "coordinates": {
+      "lat": 32.6537633,
+      "lng": -96.8838222
+    }
+  },
+  {
+    "name": "Neighbors In Need Of Services, Inc",
+    "address": "22887 State Highway 345, Rio Hondo, TX 78583",
+    "coordinates": {
+      "lat": 26.2266546,
+      "lng": -97.5683816
+    }
+  },
+  {
+    "name": "Ascension DePaul Services",
+    "address": "1418 Fitch St, San Antonio, TX 78211",
+    "coordinates": {
+      "lat": 29.3695352,
+      "lng": -98.52905969999999
+    }
+  },
+  {
+    "name": "Central Texas 4C, Inc",
+    "address": "504 N 5th St, Temple, TX 76501",
+    "coordinates": {
+      "lat": 31.1024962,
+      "lng": -97.34243579999999
+    }
+  },
+  {
+    "name": "Greater Opportunities of Permian Basin, Inc",
+    "address": "206 W 5th St, Odessa TX 79761",
+    "coordinates": {
+      "lat": 31.8477636,
+      "lng": -102.3711422
+    }
+  },
+  {
+    "name": "Jumpstart Enrichment for Tomorrow's Students",
+    "address": "4300 Avenue U, Snyder, TX 79549",
+    "coordinates": {
+      "lat": 32.6986697,
+      "lng": -100.9205114
+    }
+  },
+  {
+    "name": "Kids Are First, Inc",
+    "address": "404 Pena St, Carrizo Springs, TX 78834",
+    "coordinates": {
+      "lat": 28.5215113,
+      "lng": -99.8599765
+    }
+  },
+  {
+    "name": "Parent & Child Inc",
+    "address": "7815 Mainland Dr, San Antonio, TX 78250",
+    "coordinates": {
+      "lat": 29.511326,
+      "lng": -98.6404415
+    }
+  },
+  {
+    "name": "Brazoria County Head Start Early Learning Schools, Inc",
+    "address": "651 West Miller Street, Angleton, TX 77515",
+    "coordinates": {
+      "lat": 29.1705486,
+      "lng": -95.4400311
+    }
+  },
+  {
+    "name": "Hidalgo County Head Start Program",
+    "address": "1901 W State Highway 107, McAllen, TX 78504",
+    "coordinates": {
+      "lat": 26.3095566,
+      "lng": -98.22265689999999
+    }
+  },
+  {
+    "name": "Mi Escuelita Preschools, Inc",
+    "address": "4231 Maple Avenue, Dallas, TX 75219",
+    "coordinates": {
+      "lat": 32.8079534,
+      "lng": -96.81926659999999
+    }
+  },
+  {
+    "name": "Education Service Center Region XIV",
+    "address": "1850 State Highway 351, Abilene, TX 79601",
+    "coordinates": {
+      "lat": 32.480975,
+      "lng": -99.6936064
+    }
+  },
+  {
+    "name": "Education Service Center Region XV",
+    "address": "612 S Irene St, San Angelo, TX 76903",
+    "coordinates": {
+      "lat": 31.4567695,
+      "lng": -100.4155863
+    }
+  },
+  {
+    "name": "Region 10 ESC",
+    "address": "400 East Spring Valley, Richardson, TX 75081",
+    "coordinates": {
+      "lat": 32.9394621,
+      "lng": -96.729011
+    }
+  },
+  {
+    "name": "Region 16 ESC",
+    "address": "5800 Bell St, Amarillo, TX 79109",
+    "coordinates": {
+      "lat": 35.1482831,
+      "lng": -101.9043889
+    }
+  },
+  {
+    "name": "ESC Region 20 Head Start",
+    "address": "1314 Hines, San Antonio, TX 78208",
+    "coordinates": {
+      "lat": 29.4415098,
+      "lng": -98.446084
+    }
+  },
+  {
+    "name": "Region IX ESC",
+    "address": "301 Loop 11, Wichita Falls, TX 76306",
+    "coordinates": {
+      "lat": 33.91885300000001,
+      "lng": -98.5385963
+    }
+  },
+  {
+    "name": "Texas Tech University Center for Early Head Start",
+    "address": "3315 E Broadway, Lubbock, TX 79403",
+    "coordinates": {
+      "lat": 33.58562490000001,
+      "lng": -101.7997972
+    }
+  },
+  {
+    "name": "The University of Texas - Rio Grande Valley",
+    "address": "1201 W University Dr, Edinburg, TX 78539",
+    "coordinates": {
+      "lat": 26.305344,
+      "lng": -98.17406369999999
+    }
+  }
+]
