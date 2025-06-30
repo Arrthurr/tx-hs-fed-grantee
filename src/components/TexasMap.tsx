@@ -86,7 +86,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
   mapId
 }) => {
   // Get map data from custom hook
-  const { programs, districts, isLoading, hasErrors, programsError, districtsError, retryLoading } = useMapData();
+  const { programs, districts, isLoading, hasErrors, programsError, districtsError, retryLoading, rawDistrictFeatures } = useMapData();
   
   // Map instance reference for direct Google Maps API access
   const mapRef = useRef<google.maps.Map | null>(null);
@@ -173,7 +173,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
     }
 
     try {
-      console.log('Loading district boundaries...');
+      console.log('Loading district boundaries...', districts.length);
       const newOverlays: google.maps.Data[] = [];
 
       // Load GeoJSON for each district
@@ -201,10 +201,10 @@ const TexasMap: React.FC<TexasMapProps> = ({
           const districtColor = getDistrictColor(district.number);
           dataLayer.setStyle({
             fillColor: districtColor,
-            fillOpacity: 0.1,
+            fillOpacity: 0.25, // Increased from 0.1 for better visibility
             strokeColor: districtColor,
             strokeWeight: 2,
-            strokeOpacity: 0.8
+            strokeOpacity: 0.9 // Increased from 0.8 for better visibility
           });
 
           // Add click handler for district boundaries
@@ -241,6 +241,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
    */
   useEffect(() => {
     if (mapLoaded && districts && districts.length > 0) {
+      console.log('District boundaries visibility changed:', layerVisibility.districtBoundaries);
       loadDistrictBoundaries();
     }
   }, [mapLoaded, layerVisibility.districtBoundaries, districts, loadDistrictBoundaries]);
