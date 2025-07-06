@@ -137,14 +137,25 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
           </div>
           
           {isApiKeyError ? (
-            <ol className="text-xs text-tx-gray-600 space-y-2 list-decimal list-inside">
-              <li>Create a Google Cloud Platform project</li>
-              <li>Enable the Maps JavaScript API</li>
-              <li>Create an API key in Credentials</li>
-              <li>Copy <code className="bg-tx-gray-100 px-1 rounded text-xs">.env.local.example</code> to <code className="bg-tx-gray-100 px-1 rounded text-xs">.env.local</code></li>
-              <li>Add your API key to <code className="bg-tx-gray-100 px-1 rounded text-xs">VITE_GOOGLE_MAPS_API_KEY</code></li>
-              <li>Restart the development server</li>
-            </ol>
+            <div className="text-xs text-tx-gray-600 space-y-3">
+              <div>
+                <strong className="text-tx-gray-800">Google Maps API:</strong>
+                <ol className="list-decimal list-inside ml-4 mt-1 space-y-1">
+                  <li>Create a Google Cloud Platform project</li>
+                  <li>Enable the Maps JavaScript API</li>
+                  <li>Create an API key in Credentials</li>
+                  <li>Add your API key to <code className="bg-tx-gray-100 px-1 rounded text-xs">VITE_GOOGLE_MAPS_API_KEY</code></li>
+                </ol>
+              </div>
+              <div>
+                <strong className="text-tx-gray-800">Congress.gov API (Optional):</strong>
+                <ol className="list-decimal list-inside ml-4 mt-1 space-y-1">
+                  <li>Visit <a href="https://api.congress.gov/" target="_blank" rel="noopener noreferrer" className="underline">Congress.gov API</a></li>
+                  <li>Sign up for an API key for enhanced congressional data</li>
+                  <li>Add it to <code className="bg-tx-gray-100 px-1 rounded text-xs">VITE_CONGRESS_API_KEY</code></li>
+                </ol>
+              </div>
+            </div>
           ) : isDataError ? (
             <ul className="text-xs text-tx-gray-600 space-y-2">
               <li className="flex items-start space-x-2">

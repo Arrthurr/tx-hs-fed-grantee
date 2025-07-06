@@ -4,9 +4,6 @@ import { Building2, Users } from 'lucide-react';
 import TexasMap from './components/TexasMap';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorDisplay from './components/ErrorDisplay';
-import SearchBar from './components/SearchBar';
-import ResponsiveWrapper from './components/ResponsiveWrapper';
-import AccessibilityChecker from './components/AccessibilityChecker';
 import { useMapData } from './hooks/useMapData';
 
 /**
@@ -14,7 +11,7 @@ import { useMapData } from './hooks/useMapData';
  * Handles Google Maps API loading and provides the main user interface
  */
 const App: React.FC = () => {
-  // Get Google Maps API key from environment variables
+  // Get Google Maps API key and Map ID from environment variables
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
 
@@ -25,7 +22,7 @@ const App: React.FC = () => {
   const [mapsReady, setMapsReady] = useState(false);
 
   // Get map data and check for data loading errors
-  const { hasErrors, programsError, districtsError, retryLoading, isLoading } = useMapData();
+  const { hasErrors, programsError, districtsError, congressDataError, retryLoading, isLoading } = useMapData();
 
   /**
    * Check if Google Maps API constructors are available and callable
@@ -55,7 +52,9 @@ const App: React.FC = () => {
       console.log('Environment check:', {
         hasApiKey: !!apiKey,
         apiKeyLength: apiKey?.length || 0,
-        apiKeyPrefix: apiKey?.substring(0, 10) + '...' || 'undefined'
+        apiKeyPrefix: apiKey?.substring(0, 10) + '...' || 'undefined',
+        hasMapId: !!mapId,
+        mapId: mapId
       });
     }
 
@@ -80,7 +79,7 @@ const App: React.FC = () => {
 
     // API key looks valid, proceed with initialization
     setIsInitializing(false);
-  }, [apiKey]);
+  }, [apiKey, mapId]);
 
   /**
    * Handle successful API loading
@@ -198,15 +197,16 @@ const App: React.FC = () => {
     
     // Handle data loading errors
     if (hasErrors) {
-      const errorMessage = programsError || districtsError || 'Failed to load map data';
-      const errorDetails = programsError && districtsError 
-        ? `Programs Error: ${programsError}\n\nDistricts Error: ${districtsError}`
-        : undefined;
+      const errorMessages = [];
+      if (programsError) errorMessages.push(`Programs: ${programsError}`);
+      if (districtsError) errorMessages.push(`Districts: ${districtsError}`);
+      if (congressDataError) errorMessages.push(`Congress Data: ${congressDataError}`);
+      
+      const errorMessage = errorMessages.length > 0 ? errorMessages.join('\n\n') : 'Failed to load map data';
       
       return (
         <ErrorDisplay 
           error={errorMessage}
-          details={errorDetails}
           onRetry={retryLoading}
           errorType="data"
         />
@@ -250,8 +250,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <ResponsiveWrapper>
-      <div className="min-h-screen bg-gradient-to-br from-tx-blue-50 via-white to-tx-orange-50">
+    <div className="min-h-screen bg-gradient-to-br from-tx-blue-50 via-white to-tx-orange-50">
         {/* Header Section */}
         <header className="bg-white shadow-sm border-b border-tx-gray-200 sticky top-0 z-50" role="banner">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -263,7 +262,7 @@ const App: React.FC = () => {
                   <h1 className="text-2xl font-bold text-tx-gray-900 flex items-center gap-2">
                     Texas Head Start Federal Grantee Programs
                     <span className="text-sm font-medium bg-tx-orange-100 text-tx-orange-700 px-2 py-1 rounded-full">
-                      Bolt Hackathon Build
+                      Cursor Development Build
                     </span>
                   </h1>
                   <p className="text-sm text-tx-gray-600 mt-1">
@@ -290,13 +289,6 @@ const App: React.FC = () => {
                     <p className="text-xs text-tx-gray-600">Congressional Districts</p>
                   </div>
                 </div>
-                <a href="https://bolt.new/" target="_blank" rel="noopener noreferrer" className="ml-4">
-                  <img 
-                    src="/images/black_circle_360x360.png" 
-                    alt="Powered by Bolt" 
-                    className="h-10 w-10 object-contain"
-                  />
-                </a>
               </div>
             </div>
           </div>
@@ -344,9 +336,8 @@ const App: React.FC = () => {
         </main>
         
         {/* Accessibility Checker (only in development mode) */}
-        <AccessibilityChecker autoRun={false} />
+        {/* <AccessibilityChecker autoRun={false} /> */}
       </div>
-    </ResponsiveWrapper>
   );
 };
 

@@ -59,12 +59,14 @@ const ResponsiveWrapper: React.FC<ResponsiveWrapperProps> = ({
   
   // State for actual window size
   const [windowSize, setWindowSize] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight
+    width: typeof window !== 'undefined' ? window.innerWidth : 1280,
+    height: typeof window !== 'undefined' ? window.innerHeight : 800
   });
   
   // Update window size on resize
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const handleResize = () => {
       setWindowSize({
         width: window.innerWidth,

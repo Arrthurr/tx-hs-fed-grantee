@@ -7,6 +7,7 @@ An interactive map application that visualizes Head Start and Early Head Start F
 - **Interactive Google Maps Integration**: Smooth, responsive map of Texas with custom styling
 - **Head Start Program Markers**: View all Head Start and Early Head Start program locations across Texas
 - **Congressional District Boundaries**: Toggle district boundaries with semi-transparent, color-coded overlays
+- **Congressional Representative Data**: Real-time representative information from Congress.gov API
 - **Detailed Information Popups**: Click on any marker or district to view comprehensive details
 - **Layer Controls**: Easily toggle between different data layers
 - **Responsive Design**: Optimized for desktop and tablet devices
@@ -20,6 +21,7 @@ An interactive map application that visualizes Head Start and Early Head Start F
 
 - Node.js 16+ and npm
 - Google Maps API key with Maps JavaScript API enabled
+- Congress.gov API key (optional, for enhanced congressional data)
 
 ### Installation
 
@@ -33,22 +35,30 @@ An interactive map application that visualizes Head Start and Early Head Start F
    - Create a new project or select an existing one
    - Enable the **Maps JavaScript API**
    - Create an API key and restrict it to your domain (for production)
+   - Optionally create a Map ID for custom styling
 
-3. **Configure environment variables**:
+3. **Set up Congress.gov API** (optional):
+   - Visit [Congress.gov API](https://api.congress.gov/)
+   - Sign up for an API key
+   - This enables enhanced congressional representative data
+
+4. **Configure environment variables**:
    ```bash
    cp .env.example .env.local
    ```
-   Edit `.env.local` and add your Google Maps API key:
-   ```
-   VITE_GOOGLE_MAPS_API_KEY=your_actual_api_key_here
+   Edit `.env.local` and add your API keys:
+   ```env
+   VITE_GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key_here
+   VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
+   VITE_CONGRESS_API_KEY=your_congress_api_key_here
    ```
 
-4. **Start development server**:
+5. **Start development server**:
    ```bash
    npm run dev
    ```
 
-5. **Build for production**:
+6. **Build for production**:
    ```bash
    npm run build
    ```
@@ -60,10 +70,40 @@ An interactive map application that visualizes Head Start and Early Head Start F
 Create a `.env.local` file in your project root with the following:
 
 ```env
-# Google Maps Platform API Key
+# Google Maps Platform API Key (Required)
 # Get your key from: https://console.cloud.google.com/google/maps-apis/
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+
+# Google Maps Map ID (Optional)
+# Get your Map ID from: https://console.cloud.google.com/google/maps-apis/
+# Used for custom map styling
+VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
+
+# Congress.gov API Key (Optional)
+# Get your key from: https://api.congress.gov/
+# Enables enhanced congressional representative data
+VITE_CONGRESS_API_KEY=your_congress_api_key_here
 ```
+
+### API Key Setup Instructions
+
+#### Google Maps API
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing one
+3. Enable the **Maps JavaScript API**
+4. Create credentials (API key)
+5. Restrict the API key to your domain for security
+6. Optionally create a Map ID for custom styling
+
+#### Congress.gov API
+1. Visit [Congress.gov API](https://api.congress.gov/)
+2. Sign up for an account
+3. Request an API key
+4. The API key enables enhanced congressional data including:
+   - Representative photos
+   - Contact information
+   - Committee assignments
+   - Party affiliations
 
 ## 🏗️ Project Structure
 

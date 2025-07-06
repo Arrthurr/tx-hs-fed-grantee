@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Map, InfoWindow, AdvancedMarker } from '@vis.gl/react-google-maps';
+import { Map, InfoWindow, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { MapPin, Users, DollarSign, Calendar, Building2, Phone, Mail, Globe, MapIcon, Layers, Eye, EyeOff, User, Briefcase } from 'lucide-react';
 import { useMapData } from '../hooks/useMapData';
 import { HeadStartProgram, CongressionalDistrict } from '../types/maps';
@@ -31,9 +31,10 @@ interface MarkerClickData {
  * Interface for map layer visibility state
  */
 interface LayerVisibility {
-  programs: boolean;
-  districts: boolean;
-  districtBoundaries: boolean;
+  majorCities: boolean;
+  congressionalDistricts: boolean;
+  counties: boolean;
+  headStartPrograms: boolean;
 }
 
 /**
@@ -86,21 +87,14 @@ const TexasMap: React.FC<TexasMapProps> = ({
   mapId
 }) => {
   // Get map data from custom hook
-  const { programs, districts, isLoading, hasErrors, programsError, districtsError, retryLoading, rawDistrictFeatures } = useMapData();
+  const { programs, districts, isLoading, hasErrors, programsError, districtsError, retryLoading, rawDistrictFeatures, layerVisibility, toggleLayer } = useMapData();
   
-  // Map instance reference for direct Google Maps API access
-  const mapRef = useRef<google.maps.Map | null>(null);
+  // Get map instance using the useMap hook
+  const map = useMap();
   
   // State for selected marker and info window
   const [selectedMarker, setSelectedMarker] = useState<MarkerClickData | null>(null);
   const [infoWindowOpen, setInfoWindowOpen] = useState(false);
-  
-  // State for layer visibility controls
-  const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>({
-    programs: true,
-    districts: true,
-    districtBoundaries: false
-  });
   
   // State for district boundary overlays
   const [districtOverlays, setDistrictOverlays] = useState<google.maps.Data[]>([]);
@@ -123,11 +117,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
    * Handle map load event
    * Sets up the map reference for direct API access
    */
-  const handleMapLoad = useCallback((map: google.maps.Map) => {
-    console.log('Map loaded successfully');
-    mapRef.current = map;
-    setMapLoaded(true);
-  }, []);
+  // Remove the handleMapLoad function since we're using useMap hook
 
   /**
    * Handle marker click events
@@ -147,23 +137,25 @@ const TexasMap: React.FC<TexasMapProps> = ({
     setSelectedMarker(null);
   }, []);
 
-  /**
-   * Toggle layer visibility
-   */
-  const toggleLayer = useCallback((layer: keyof LayerVisibility) => {
-    setLayerVisibility(prev => ({
-      ...prev,
-      [layer]: !prev[layer]
-    }));
-  }, []);
+
 
   /**
    * Load district boundary GeoJSON data
    * This function fetches and displays the district boundaries when the layer is enabled
    */
   const loadDistrictBoundaries = useCallback(async () => {
+    console.log('loadDistrictBoundaries called:', {
+      mapExists: !!map,
+      districtBoundariesVisible: layerVisibility.districtBoundaries,
+      districtsLength: districts?.length
+    });
+    
     // Skip if map is not loaded or boundaries are not visible
-    if (!mapRef.current || !layerVisibility.districtBoundaries) {
+    if (!map || !layerVisibility.districtBoundaries) {
+      console.log('Skipping district boundaries load:', {
+        mapExists: !!map,
+        districtBoundariesVisible: layerVisibility.districtBoundaries
+      });
       // Clear existing overlays if boundaries are being hidden
       districtOverlays.forEach(overlay => {
         overlay.setMap(null);
@@ -173,7 +165,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
     }
 
     try {
-      console.log('Loading district boundaries...', districts.length);
+      console.log('Loading district boundaries (District Boundaries toggle)...', districts.length);
       const newOverlays: google.maps.Data[] = [];
 
       // Load GeoJSON for each district
@@ -190,11 +182,13 @@ const TexasMap: React.FC<TexasMapProps> = ({
           const geoJsonData = await response.json();
           
           // Create a new Data layer for this district
+          console.log(`Creating data layer for district ${district.number}`);
           const dataLayer = new google.maps.Data({
-            map: mapRef.current
+            map: map
           });
 
           // Add the GeoJSON data to the layer
+          console.log(`Adding GeoJSON data for district ${district.number}:`, geoJsonData);
           dataLayer.addGeoJson(geoJsonData);
 
           // Style the district boundary with a unique color based on district number
@@ -234,17 +228,33 @@ const TexasMap: React.FC<TexasMapProps> = ({
     } catch (error) {
       console.error('Error loading district boundaries:', error);
     }
-  }, [mapRef.current, layerVisibility.districtBoundaries, districts, districtOverlays, handleMarkerClick]);
+  }, [map, layerVisibility.districtBoundaries, districts, handleMarkerClick]);
+
+  /**
+   * Effect to detect when map is ready (when districts are loaded)
+   */
+  useEffect(() => {
+    if (districts && districts.length > 0 && !mapLoaded) {
+      console.log('Map is ready - districts loaded');
+      setMapLoaded(true);
+    }
+  }, [districts]);
 
   /**
    * Effect to load/unload district boundaries when visibility changes
    */
   useEffect(() => {
+    console.log('District boundaries effect triggered:', { 
+      mapLoaded, 
+      districtsLength: districts?.length, 
+      districtBoundariesVisible: layerVisibility.districtBoundaries,
+      congressionalDistrictsVisible: layerVisibility.congressionalDistricts 
+    });
     if (mapLoaded && districts && districts.length > 0) {
       console.log('District boundaries visibility changed:', layerVisibility.districtBoundaries);
       loadDistrictBoundaries();
     }
-  }, [mapLoaded, layerVisibility.districtBoundaries, districts, loadDistrictBoundaries]);
+  }, [mapLoaded, layerVisibility.districtBoundaries, districts]);
 
   /**
    * Cleanup effect to remove overlays when component unmounts
@@ -534,12 +544,34 @@ const TexasMap: React.FC<TexasMapProps> = ({
     );
   }
 
+  // Map the layer visibility from useMapData to the format expected by MapControls
+  const mapControlsLayerVisibility = {
+    programs: layerVisibility.headStartPrograms,
+    districts: layerVisibility.congressionalDistricts,
+    districtBoundaries: layerVisibility.districtBoundaries // Use separate district boundaries layer
+  };
+
+  // Map the toggle function to handle the conversion
+  const handleMapControlsToggle = (layer: 'programs' | 'districts' | 'districtBoundaries') => {
+    switch (layer) {
+      case 'programs':
+        toggleLayer('headStartPrograms');
+        break;
+      case 'districts':
+        toggleLayer('congressionalDistricts');
+        break;
+      case 'districtBoundaries':
+        toggleLayer('districtBoundaries'); // Use separate district boundaries layer
+        break;
+    }
+  };
+
   return (
     <div className={`relative ${className}`} style={{ height }}>
       {/* Map Controls */}
       <MapControls
-        layerVisibility={layerVisibility}
-        onToggleLayer={toggleLayer}
+        layerVisibility={mapControlsLayerVisibility}
+        onToggleLayer={handleMapControlsToggle}
         programCount={programs?.length || 0}
         districtCount={districts?.length || 0}
       />
@@ -549,7 +581,6 @@ const TexasMap: React.FC<TexasMapProps> = ({
         mapId={mapId}
         defaultCenter={defaultCenter}
         defaultZoom={defaultZoom}
-        onLoad={handleMapLoad}
         gestureHandling="greedy"
         disableDefaultUI={false}
         mapTypeControl={true}
@@ -559,7 +590,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
         className="w-full h-full"
       >
         {/* Head Start Program Markers */}
-        {layerVisibility.programs && programs && programs.map((program) => (
+        {layerVisibility.headStartPrograms && programs && programs.map((program) => (
           <AdvancedMarker
             key={`program-${program.id}`}
             position={{ lat: program.lat, lng: program.lng }}
@@ -596,8 +627,8 @@ const TexasMap: React.FC<TexasMapProps> = ({
           </AdvancedMarker>
         ))}
 
-        {/* Congressional District Center Markers */}
-        {layerVisibility.districts && districts && districts.map((district) => (
+        {/* Congressional District Center Markers - Controlled by Congressional Districts toggle */}
+        {layerVisibility.congressionalDistricts && districts && districts.map((district) => (
           <AdvancedMarker
             key={`district-${district.number}`}
             position={district.center}

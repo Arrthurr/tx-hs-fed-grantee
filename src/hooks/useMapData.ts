@@ -11,7 +11,8 @@ export const useMapData = () => {
   // Layer visibility state
   const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>({
     majorCities: false, // We'll disable this for Head Start focus
-    congressionalDistricts: false, // Ensure this is false by default
+    congressionalDistricts: false, // Disable congressional districts by default (hides district center markers)
+    districtBoundaries: false, // Disable district boundaries by default (hides geographic polygons)
     counties: false, // We'll disable this for Head Start focus
     headStartPrograms: true // Enable Head Start programs by default
   });
@@ -70,10 +71,10 @@ export const useMapData = () => {
     
     if (geometry.type === 'Polygon') {
       // For polygon, use the outer ring (first array of coordinates)
-      allCoordinates = geometry.coordinates[0];
+      allCoordinates = geometry.coordinates[0] as number[][];
     } else if (geometry.type === 'MultiPolygon') {
       // For multipolygon, flatten all outer rings
-      geometry.coordinates.forEach(polygon => {
+      (geometry.coordinates as number[][][][]).forEach(polygon => {
         allCoordinates = allCoordinates.concat(polygon[0]);
       });
     }
@@ -290,8 +291,8 @@ export const useMapData = () => {
     
     const apiKey = import.meta.env.VITE_CONGRESS_API_KEY;
     if (!apiKey) {
-      console.warn('Congress.gov API key not found in environment variables');
-      setCongressDataError('Congress.gov API key not configured');
+      console.log('Congress.gov API key not found - skipping enhanced congressional data');
+      // Don't set an error, just skip the enhanced data
       return;
     }
     
@@ -329,7 +330,7 @@ export const useMapData = () => {
       } else if (congressData && Array.isArray(congressData)) {
         // Direct array format
         members = congressData as unknown as CongressApiMember[];
-      } else if (congressData && congressData.members && Array.isArray(congressData.members)) {
+      } else if (congressData && (congressData as any).members && Array.isArray((congressData as any).members)) {
         // Alternative format with members array
         members = (congressData as any).members;
       } else {
