@@ -77,6 +77,8 @@ export interface LayerVisibility {
   majorCities: boolean;
   /** Congressional Districts layer visibility */
   congressionalDistricts: boolean;
+  /** District Boundaries layer visibility */
+  districtBoundaries: boolean;
   /** Counties layer visibility */
   counties: boolean;
   /** Head Start Programs layer visibility */
