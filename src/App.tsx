@@ -262,7 +262,7 @@ const App: React.FC = () => {
                   <h1 className="text-2xl font-bold text-tx-gray-900 flex items-center gap-2">
                     Texas Head Start Federal Grantee Programs
                     <span className="text-sm font-medium bg-tx-orange-100 text-tx-orange-700 px-2 py-1 rounded-full">
-                      Cursor Development Build
+                      Public Preview
                     </span>
                   </h1>
                   <p className="text-sm text-tx-gray-600 mt-1">
