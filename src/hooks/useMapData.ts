@@ -1,7 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { LayerVisibility, HeadStartProgram, CongressionalDistrictFeature, CongressionalDistrict, CongressApiResponse, CongressApiMember } from '../types/maps';
-import { processHeadStartPrograms, validateHeadStartProgram } from '../data/headStartPrograms';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { HeadStartProgram, CongressionalDistrictFeature, LayerVisibility, CongressApiMember, CongressionalDistrict, CongressApiResponse } from '../types/maps';
+import { processHeadStartPrograms, isWithinTexasBounds, validateHeadStartProgram } from '../data/headStartPrograms';
 import { processCongressionalDistricts, validateCongressionalDistrict } from '../data/congressionalDistricts';
+import { getCongressApiKey } from '../utils/envValidator';
 
 /**
  * Custom hook for managing map data and layer states
@@ -289,7 +290,9 @@ export const useMapData = () => {
       return;
     }
     
-    const apiKey = import.meta.env.VITE_CONGRESS_API_KEY;
+    // Get API key from environment - use process.env in test environment, import.meta.env in browser
+    const apiKey = getCongressApiKey();
+
     if (!apiKey) {
       console.log('Congress.gov API key not found - skipping enhanced congressional data');
       // Don't set an error, just skip the enhanced data

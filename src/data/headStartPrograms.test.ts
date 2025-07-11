@@ -271,7 +271,7 @@ describe('Head Start Programs Data Processing', () => {
           address: 'Near Austin, TX',
           lat: 30.2700,  // Very close to Austin
           lng: -97.7400,
-          type: 'head-start',
+          type: 'head-start' as const,  // Fix type assertion
           grantee: 'Nearby Austin Program',
           funding: undefined
         }
