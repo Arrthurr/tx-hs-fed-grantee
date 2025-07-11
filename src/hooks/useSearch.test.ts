@@ -9,11 +9,14 @@ const mockLatLngBounds = {
 };
 
 // Reset the mock implementation before each test
+const mockLatLngBoundsConstructor = jest.fn().mockImplementation(() => mockLatLngBounds);
+(mockLatLngBoundsConstructor as any).MAX_BOUNDS = mockLatLngBounds;
+
 global.google = {
   ...global.google,
   maps: {
     ...global.google.maps,
-    LatLngBounds: jest.fn().mockImplementation(() => mockLatLngBounds),
+    LatLngBounds: mockLatLngBoundsConstructor as any,
   },
 };
 
@@ -214,7 +217,7 @@ describe('useSearch Hook', () => {
 
   test('filters districts by district number', () => {
     const { result } = renderHook(() => 
-      useSearch(mockHeadStartPrograms, mockCongressionalDistricts)
+      useSearch(mockHeadStartPrograms, mockCongressionalDistricts, { minSearchLength: 1 })
     );
     
     act(() => {

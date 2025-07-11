@@ -88,15 +88,19 @@ export const useSearch = (
    */
   const searchResults: SearchResults = useMemo(() => {
     const isActive = searchTerm.length >= searchOptions.minSearchLength;
-    const totalResults = filteredPrograms.length + filteredDistricts.length;
+    
+    // Apply include options to determine what to include in results
+    const resultPrograms = isActive && searchOptions.includePrograms ? filteredPrograms : [];
+    const resultDistricts = isActive && searchOptions.includeDistricts ? filteredDistricts : [];
+    const totalResults = isActive ? resultPrograms.length + resultDistricts.length : 0;
     
     return {
-      programs: filteredPrograms,
-      districts: filteredDistricts,
+      programs: resultPrograms,
+      districts: resultDistricts,
       isSearchActive: isActive,
       totalResults
     };
-  }, [filteredPrograms, filteredDistricts, searchTerm, searchOptions.minSearchLength]);
+  }, [filteredPrograms, filteredDistricts, searchTerm, searchOptions.minSearchLength, searchOptions.includePrograms, searchOptions.includeDistricts]);
 
   /**
    * Handle search input change
@@ -149,13 +153,13 @@ export const useSearch = (
       // A more sophisticated approach would calculate the centroid of each district
       if (district.geometry.type === 'Polygon' && district.geometry.coordinates[0]?.length > 0) {
         const firstCoord = district.geometry.coordinates[0][0];
-        if (firstCoord && firstCoord.length >= 2) {
-          bounds.extend({ lat: firstCoord[1], lng: firstCoord[0] });
+        if (Array.isArray(firstCoord) && firstCoord.length >= 2) {
+          bounds.extend({ lat: firstCoord[1] as number, lng: firstCoord[0] as number });
         }
       } else if (district.geometry.type === 'MultiPolygon' && district.geometry.coordinates[0]?.[0]?.length > 0) {
         const firstCoord = district.geometry.coordinates[0][0][0];
-        if (firstCoord && firstCoord.length >= 2) {
-          bounds.extend({ lat: firstCoord[1], lng: firstCoord[0] });
+        if (Array.isArray(firstCoord) && firstCoord.length >= 2) {
+          bounds.extend({ lat: firstCoord[1] as number, lng: firstCoord[0] as number });
         }
       }
     });

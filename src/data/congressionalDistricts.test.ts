@@ -13,13 +13,14 @@ import {
   getCongressionalDistrictStats,
   formatDistrictNumber,
   getOrdinalSuffix,
-  createDistrictFeatureCollection
+  createDistrictFeatureCollection,
+  RawCongressionalDistrict
 } from './congressionalDistricts';
 import { CongressionalDistrictFeature } from '../types/maps';
 
 describe('Congressional Districts Data Processing', () => {
   // Sample test data
-  const mockRawDistricts = [
+  const mockRawDistricts: RawCongressionalDistrict[] = [
     {
       type: 'Feature',
       properties: {
@@ -31,13 +32,15 @@ describe('Congressional Districts Data Processing', () => {
       },
       geometry: {
         type: 'Polygon',
-        coordinates: [[
-          [-97.0, 30.0],
-          [-97.0, 31.0],
-          [-96.0, 31.0],
-          [-96.0, 30.0],
-          [-97.0, 30.0]
-        ]]
+        coordinates: [
+          [
+            [-97, 30],
+            [-96, 30],
+            [-96, 31],
+            [-97, 31],
+            [-97, 30]
+          ]
+        ]
       }
     },
     {
@@ -54,11 +57,11 @@ describe('Congressional Districts Data Processing', () => {
         coordinates: [
           [
             [
-              [-95.0, 29.0],
-              [-95.0, 30.0],
-              [-94.0, 30.0],
-              [-94.0, 29.0],
-              [-95.0, 29.0]
+              [-95, 29],
+              [-94, 29],
+              [-94, 30],
+              [-95, 30],
+              [-95, 29]
             ]
           ]
         ]
@@ -101,7 +104,7 @@ describe('Congressional Districts Data Processing', () => {
     });
 
     test('filters out invalid districts', () => {
-      const invalidDistricts = [
+      const invalidDistricts: RawCongressionalDistrict[] = [
         ...mockRawDistricts,
         {
           type: 'Feature',

@@ -670,11 +670,9 @@ const TexasMap: React.FC<TexasMapProps> = ({
           <InfoWindow
             position={selectedMarker.position}
             onCloseClick={handleInfoWindowClose}
-            options={{
-              pixelOffset: new google.maps.Size(0, -10),
-              disableAutoPan: false,
-              maxWidth: 400
-            }}
+            pixelOffset={[0, -10]}
+            disableAutoPan={false}
+            maxWidth={400}
           >
             {selectedMarker.type === 'program' && selectedMarker.program
               ? renderProgramInfoWindow(selectedMarker.program)

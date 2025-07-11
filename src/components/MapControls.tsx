@@ -14,7 +14,7 @@ interface MapControlsProps {
     districtBoundaries: boolean;
   };
   /** Function to toggle layer visibility */
-  onToggleLayer: (layer: keyof typeof layerVisibility) => void;
+  onToggleLayer: (layer: keyof MapControlsProps['layerVisibility']) => void;
   /** Number of programs */
   programCount: number;
   /** Number of districts */

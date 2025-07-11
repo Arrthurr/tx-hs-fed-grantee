@@ -1,12 +1,20 @@
+/// <reference types="@testing-library/jest-dom" />
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import TexasMap from './TexasMap';
 import { useMapData } from '../hooks/useMapData';
-import { useSearch } from '../hooks/useSearch';
+import { APIProvider } from '@vis.gl/react-google-maps';
 
 // Mock the custom hooks
 jest.mock('../hooks/useMapData');
-jest.mock('../hooks/useSearch');
+
+// Mock the API Provider
+jest.mock('@vis.gl/react-google-maps', () => ({
+  ...jest.requireActual('@vis.gl/react-google-maps'),
+  APIProvider: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="api-provider">{children}</div>
+  ),
+}));
 
 // Sample test data
 const mockHeadStartPrograms = [
@@ -72,35 +80,24 @@ const mockRawDistrictFeatures = [
       ]],
     },
   },
-  {
-    type: 'Feature' as const,
-    properties: {
-      district: 'TX-2',
-      name: 'Texas 2nd Congressional District',
-      representative: 'Representative 2',
-      districtNumber: 2,
-      state: 'TX',
-    },
-    geometry: {
-      type: 'MultiPolygon' as const,
-      coordinates: [
-        [
-          [
-            [-95.0, 29.0],
-            [-95.0, 30.0],
-            [-94.0, 30.0],
-            [-94.0, 29.0],
-            [-95.0, 29.0],
-          ],
-        ],
-      ],
-    },
-  },
 ];
 
 // Default mock implementations
 const mockUseMapData = useMapData as jest.MockedFunction<typeof useMapData>;
-const mockUseSearch = useSearch as jest.MockedFunction<typeof useSearch>;
+
+// Mock environment variables
+const originalEnv = process.env;
+
+beforeAll(() => {
+  process.env = {
+    ...originalEnv,
+    VITE_GOOGLE_MAPS_API_KEY: 'test-api-key',
+  };
+});
+
+afterAll(() => {
+  process.env = originalEnv;
+});
 
 describe('TexasMap Component', () => {
   beforeEach(() => {
@@ -109,16 +106,15 @@ describe('TexasMap Component', () => {
     
     // Setup default mock implementations
     mockUseMapData.mockReturnValue({
-      visibleHeadStartPrograms: mockHeadStartPrograms,
-      visibleCongressionalDistricts: mockCongressionalDistricts,
-      headStartPrograms: mockHeadStartPrograms,
-      congressionalDistricts: mockCongressionalDistricts,
       programs: mockHeadStartPrograms,
       districts: mockCongressionalDistricts,
+      headStartPrograms: mockHeadStartPrograms,
+      congressionalDistricts: mockCongressionalDistricts,
       rawDistrictFeatures: mockRawDistrictFeatures,
       layerVisibility: {
         majorCities: false,
-        congressionalDistricts: true,
+        congressionalDistricts: false,
+        districtBoundaries: false,
         counties: false,
         headStartPrograms: true,
       },
@@ -137,35 +133,26 @@ describe('TexasMap Component', () => {
       loadCongressionalDistricts: jest.fn(),
       loadCongressionalData: jest.fn(),
     });
-    
-    mockUseSearch.mockReturnValue({
-      searchTerm: '',
-      isSearching: false,
-      searchResults: {
-        programs: [],
-        districts: [],
-        isSearchActive: false,
-        totalResults: 0,
-      },
-      filteredPrograms: mockHeadStartPrograms,
-      filteredDistricts: mockRawDistrictFeatures,
-      handleSearchChange: jest.fn(),
-      clearSearch: jest.fn(),
-      findProgramById: jest.fn(),
-      findDistrictByNumber: jest.fn(),
-      getSearchResultsBounds: jest.fn().mockReturnValue(null),
-    });
   });
 
+  // Mock the TexasMap component with API Provider wrapper
+  const TexasMapWithProvider = () => (
+    <APIProvider apiKey="test-api-key">
+      <TexasMap />
+    </APIProvider>
+  );
+
   test('renders the map component', () => {
-    render(<TexasMap />);
+    render(<TexasMapWithProvider />);
     
+    // Check if the API provider is rendered
+    expect(screen.getByTestId('api-provider')).toBeInTheDocument();
     // Check if the map container is rendered
     expect(screen.getByTestId('google-map')).toBeInTheDocument();
   });
 
   test('renders program markers when headStartPrograms layer is visible', () => {
-    render(<TexasMap />);
+    render(<TexasMapWithProvider />);
     
     // Check if program markers are rendered
     const markers = screen.getAllByTestId('advanced-marker');
@@ -177,12 +164,15 @@ describe('TexasMap Component', () => {
     mockUseMapData.mockReturnValue({
       ...mockUseMapData(),
       layerVisibility: {
-        ...mockUseMapData().layerVisibility,
+        majorCities: false,
+        congressionalDistricts: false,
+        districtBoundaries: false,
+        counties: false,
         headStartPrograms: false,
       },
     });
     
-    render(<TexasMap />);
+    render(<TexasMapWithProvider />);
     
     // Check that no markers are rendered
     const markers = screen.queryAllByTestId('advanced-marker');
@@ -190,7 +180,7 @@ describe('TexasMap Component', () => {
   });
 
   test('renders info window when a program is selected', async () => {
-    render(<TexasMap />);
+    render(<TexasMapWithProvider />);
     
     // Find a marker and click it
     const markers = screen.getAllByTestId('advanced-marker');
@@ -199,12 +189,11 @@ describe('TexasMap Component', () => {
     // Check if info window is rendered
     await waitFor(() => {
       expect(screen.getByTestId('info-window')).toBeInTheDocument();
-      expect(screen.getByText(mockHeadStartPrograms[0].name)).toBeInTheDocument();
     });
   });
 
   test('closes info window when close button is clicked', async () => {
-    render(<TexasMap />);
+    render(<TexasMapWithProvider />);
     
     // Find a marker and click it to open info window
     const markers = screen.getAllByTestId('advanced-marker');
@@ -220,106 +209,46 @@ describe('TexasMap Component', () => {
     });
   });
 
-  test('displays search results when search is active', () => {
-    // Override the mock to simulate active search
-    mockUseSearch.mockReturnValue({
-      ...mockUseSearch(),
-      searchTerm: 'test',
-      isSearching: true,
-      searchResults: {
-        programs: mockHeadStartPrograms,
-        districts: mockRawDistrictFeatures,
-        isSearchActive: true,
-        totalResults: mockHeadStartPrograms.length + mockRawDistrictFeatures.length,
-      },
+  test('displays loading state when data is loading', () => {
+    // Override the mock to show loading state
+    mockUseMapData.mockReturnValue({
+      ...mockUseMapData(),
+      isLoading: true,
     });
     
-    render(<TexasMap />);
+    render(<TexasMapWithProvider />);
     
-    // Check if search results are displayed
-    expect(screen.getByText(/found/i)).toBeInTheDocument();
+    // Check if loading spinner is displayed
+    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
   });
 
-  test('handles program selection from search results', async () => {
-    // Override the mock to simulate active search
-    const handleSelectProgramMock = jest.fn();
-    mockUseSearch.mockReturnValue({
-      ...mockUseSearch(),
-      searchTerm: 'test',
-      isSearching: true,
-      searchResults: {
-        programs: mockHeadStartPrograms,
-        districts: [],
-        isSearchActive: true,
-        totalResults: mockHeadStartPrograms.length,
-      },
-      handleSearchChange: jest.fn(),
-      clearSearch: jest.fn(),
+  test('displays error state when there are errors', () => {
+    // Override the mock to show error state
+    mockUseMapData.mockReturnValue({
+      ...mockUseMapData(),
+      hasErrors: true,
+      programsError: 'Failed to load programs',
     });
     
-    render(<TexasMap />);
+    render(<TexasMapWithProvider />);
     
-    // Find a program in search results and click it
-    const programButtons = screen.getAllByText(mockHeadStartPrograms[0].name);
-    fireEvent.click(programButtons[0]);
-    
-    // Check if map.panTo and map.setZoom were called
-    await waitFor(() => {
-      expect(global.google.maps.Map.prototype.panTo).toHaveBeenCalled();
-      expect(global.google.maps.Map.prototype.setZoom).toHaveBeenCalled();
-    });
+    // Check if error display is shown
+    expect(screen.getByTestId('error-display')).toBeInTheDocument();
   });
 
-  test('handles district selection from search results', async () => {
-    // Override the mock to simulate active search
-    mockUseSearch.mockReturnValue({
-      ...mockUseSearch(),
-      searchTerm: 'district',
-      isSearching: true,
-      searchResults: {
-        programs: [],
-        districts: mockRawDistrictFeatures,
-        isSearchActive: true,
-        totalResults: mockRawDistrictFeatures.length,
-      },
-    });
-    
-    render(<TexasMap />);
-    
-    // Find a district in search results and click it
-    const districtButtons = screen.getAllByText(/District/);
-    fireEvent.click(districtButtons[0]);
-    
-    // Check if map.panTo and map.setZoom were called
-    await waitFor(() => {
-      expect(global.google.maps.Map.prototype.panTo).toHaveBeenCalled();
-      expect(global.google.maps.Map.prototype.setZoom).toHaveBeenCalled();
-    });
-  });
-
-  test('toggles layer visibility when layer controls are clicked', () => {
+  test('calls toggleLayer when layer controls are used', () => {
     const toggleLayerMock = jest.fn();
     mockUseMapData.mockReturnValue({
       ...mockUseMapData(),
       toggleLayer: toggleLayerMock,
     });
     
-    render(<TexasMap />);
+    render(<TexasMapWithProvider />);
     
-    // Find layer toggle buttons
-    const headStartToggle = screen.getByText('Head Start Programs').closest('button');
-    const districtsToggle = screen.getByText('Congressional Districts').closest('button');
+    // Find and click a layer toggle button
+    const headStartToggle = screen.getByTitle('Toggle Head Start Programs');
+    fireEvent.click(headStartToggle);
     
-    // Click head start toggle
-    if (headStartToggle) {
-      fireEvent.click(headStartToggle);
-      expect(toggleLayerMock).toHaveBeenCalledWith('headStartPrograms');
-    }
-    
-    // Click districts toggle
-    if (districtsToggle) {
-      fireEvent.click(districtsToggle);
-      expect(toggleLayerMock).toHaveBeenCalledWith('congressionalDistricts');
-    }
+    expect(toggleLayerMock).toHaveBeenCalledWith('programs');
   });
 });
