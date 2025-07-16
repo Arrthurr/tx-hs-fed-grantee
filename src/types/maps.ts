@@ -70,13 +70,11 @@ export interface MapState {
 
 /**
  * Layer visibility state for toggleable map layers
- * This will be used for the four data layers as specified in the PRD
+ * Now simplified to two primary data layers: Head Start Programs and District Boundaries
  */
 export interface LayerVisibility {
   /** Major Cities layer visibility */
   majorCities: boolean;
-  /** Congressional Districts layer visibility */
-  congressionalDistricts: boolean;
   /** District Boundaries layer visibility */
   districtBoundaries: boolean;
   /** Counties layer visibility */

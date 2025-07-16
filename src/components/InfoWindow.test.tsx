@@ -67,7 +67,7 @@ const DistrictInfoWindow: React.FC<{
         <div className="district-party">{district.party}</div>
       )}
       <div className="district-representative">{district.representative}</div>
-      {district.population && (
+      {district.population && district.population > 0 && (
         <div className="district-population">
           {district.population.toLocaleString()}
         </div>
@@ -80,6 +80,19 @@ const DistrictInfoWindow: React.FC<{
           {district.contact.email && (
             <div className="contact-email">{district.contact.email}</div>
           )}
+          {district.contact.website && (
+            <div className="contact-website">{district.contact.website}</div>
+          )}
+          {district.contact.office && (
+            <div className="contact-office">{district.contact.office}</div>
+          )}
+        </div>
+      )}
+      {district.committees && district.committees.length > 0 && (
+        <div className="district-committees">
+          {district.committees.map((committee, index) => (
+            <div key={index} className="committee-item">{committee}</div>
+          ))}
         </div>
       )}
     </div>
@@ -201,6 +214,16 @@ describe('InfoWindow Components', () => {
       // Check if contact info is displayed
       expect(screen.getByText('(555) 123-4567')).toBeInTheDocument();
       expect(screen.getByText('rep@example.com')).toBeInTheDocument();
+      
+      // Check if website link is displayed
+      expect(screen.getByText('https://example.com')).toBeInTheDocument();
+      
+      // Check if office address is displayed
+      expect(screen.getByText('123 Capitol Building')).toBeInTheDocument();
+      
+      // Check if committee information is displayed
+      expect(screen.getByText('Committee 1')).toBeInTheDocument();
+      expect(screen.getByText('Committee 2')).toBeInTheDocument();
     });
 
     test('calls onClose when info window is clicked', () => {
@@ -226,10 +249,46 @@ describe('InfoWindow Components', () => {
     });
 
     test('handles district without population data', () => {
-      const districtWithoutPopulation = { ...mockDistrict, population: undefined };
+      const districtWithoutPopulation = { ...mockDistrict, population: 0 };
       render(<DistrictInfoWindow district={districtWithoutPopulation} onClose={onClose} />);
       
       expect(screen.queryByText('750,000')).not.toBeInTheDocument();
+    });
+
+    test('handles district with partial contact information', () => {
+      const districtWithPartialContact = { 
+        ...mockDistrict, 
+        contact: {
+          phone: '(555) 123-4567',
+          // No email, website, or office
+        }
+      };
+      render(<DistrictInfoWindow district={districtWithPartialContact} onClose={onClose} />);
+      
+      // Should show phone
+      expect(screen.getByText('(555) 123-4567')).toBeInTheDocument();
+      
+      // Should not show other contact info
+      expect(screen.queryByText('rep@example.com')).not.toBeInTheDocument();
+      expect(screen.queryByText('https://example.com')).not.toBeInTheDocument();
+      expect(screen.queryByText('123 Capitol Building')).not.toBeInTheDocument();
+    });
+
+    test('handles district without committees data', () => {
+      const districtWithoutCommittees = { ...mockDistrict, committees: undefined };
+      render(<DistrictInfoWindow district={districtWithoutCommittees} onClose={onClose} />);
+      
+      expect(screen.queryByText('Committee 1')).not.toBeInTheDocument();
+      expect(screen.queryByText('Committee 2')).not.toBeInTheDocument();
+    });
+
+    test('handles district without photo data', () => {
+      const districtWithoutPhoto = { ...mockDistrict, photoUrl: undefined };
+      render(<DistrictInfoWindow district={districtWithoutPhoto} onClose={onClose} />);
+      
+      // Test should still pass - photo is optional and handled gracefully
+      expect(screen.getByTestId('district-info')).toBeInTheDocument();
+      expect(screen.getByText(mockDistrict.representative)).toBeInTheDocument();
     });
   });
 });

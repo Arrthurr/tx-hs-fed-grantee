@@ -10,22 +10,18 @@ interface MapControlsProps {
   /** Layer visibility state */
   layerVisibility: {
     programs: boolean;
-    districts: boolean;
     districtBoundaries: boolean;
   };
   /** Function to toggle layer visibility */
   onToggleLayer: (layer: keyof MapControlsProps['layerVisibility']) => void;
   /** Number of programs */
   programCount: number;
-  /** Number of districts */
-  districtCount: number;
 }
 
 const MapControls: React.FC<MapControlsProps> = ({
   layerVisibility,
   onToggleLayer,
-  programCount,
-  districtCount
+  programCount
 }) => {
   return (
     <div className="absolute top-[82px] left-4 z-map-controls flex flex-col space-y-3" role="region" aria-label="Map controls">
@@ -75,41 +71,6 @@ const MapControls: React.FC<MapControlsProps> = ({
           </button>
           
           <button
-            onClick={() => onToggleLayer('districts')}
-            className={`p-4 hover:bg-tx-gray-50 transition-all duration-200 border-b border-tx-gray-100 w-full flex items-center justify-between group ${
-              layerVisibility.districts ? 'bg-district-accent' : ''
-            }`}
-            title="Toggle Congressional Districts"
-            aria-label="Toggle congressional districts layer"
-            aria-pressed={layerVisibility.districts}
-          >
-            <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-lg transition-colors duration-200 ${
-                layerVisibility.districts 
-                  ? 'bg-district-primary text-white' 
-                  : 'bg-tx-gray-100 text-tx-gray-600 group-hover:bg-tx-gray-200'
-              }`} aria-hidden="true">
-                <Users className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <span className={`text-sm font-medium transition-colors duration-200 ${
-                  layerVisibility.districts ? 'text-district-primary' : 'text-tx-gray-700'
-                }`}>
-                  Congressional Districts
-                </span>
-                <p className="text-xs text-tx-gray-500">
-                  {districtCount} districts in Texas
-                </p>
-              </div>
-            </div>
-            <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
-              layerVisibility.districts 
-                ? 'bg-district-primary border-district-primary' 
-                : 'bg-white border-tx-gray-300 group-hover:border-tx-gray-400'
-            }`} aria-hidden="true"></div>
-          </button>
-          
-          <button
             onClick={() => onToggleLayer('districtBoundaries')}
             className={`p-4 hover:bg-tx-gray-50 transition-all duration-200 w-full flex items-center justify-between group ${
               layerVisibility.districtBoundaries ? 'bg-tx-blue-50' : ''
@@ -119,23 +80,23 @@ const MapControls: React.FC<MapControlsProps> = ({
             aria-pressed={layerVisibility.districtBoundaries}
           >
             <div className="flex items-center space-x-3">
-              <div className={`p-2 rounded-lg transition-colors duration-200 ${
-                layerVisibility.districtBoundaries 
-                  ? 'bg-tx-blue-600 text-white' 
-                  : 'bg-tx-gray-100 text-tx-gray-600 group-hover:bg-tx-gray-200'
-              }`} aria-hidden="true">
-                {layerVisibility.districtBoundaries ? (
-                  <Eye className="w-4 h-4" />
-                ) : (
-                  <EyeOff className="w-4 h-4" />
-                )}
-              </div>
-              <div className="text-left">
-                <span className={`text-sm font-medium transition-colors duration-200 ${
-                  layerVisibility.districtBoundaries ? 'text-tx-blue-600' : 'text-tx-gray-700'
-                }`}>
-                  District Boundaries
-                </span>
+                          <div className={`p-2 rounded-lg transition-colors duration-200 ${
+              layerVisibility.districtBoundaries 
+                ? 'text-white' 
+                : 'bg-tx-gray-100 text-tx-gray-600 group-hover:bg-tx-gray-200'
+            }`} aria-hidden="true" style={layerVisibility.districtBoundaries ? { backgroundColor: '#7C3AED' } : {}}>
+              {layerVisibility.districtBoundaries ? (
+                <Eye className="w-4 h-4" />
+              ) : (
+                <EyeOff className="w-4 h-4" />
+              )}
+            </div>
+            <div className="text-left">
+              <span className={`text-sm font-medium transition-colors duration-200 ${
+                layerVisibility.districtBoundaries ? '' : 'text-tx-gray-700'
+              }`} style={layerVisibility.districtBoundaries ? { color: '#7C3AED' } : {}}>
+                District Boundaries
+              </span>
                 <p className="text-xs text-tx-gray-500">
                   Show geographic boundaries
                 </p>
@@ -143,9 +104,9 @@ const MapControls: React.FC<MapControlsProps> = ({
             </div>
             <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
               layerVisibility.districtBoundaries 
-                ? 'bg-tx-blue-600 border-tx-blue-600' 
+                ? '' 
                 : 'bg-white border-tx-gray-300 group-hover:border-tx-gray-400'
-            }`} aria-hidden="true"></div>
+            }`} aria-hidden="true" style={layerVisibility.districtBoundaries ? { backgroundColor: '#7C3AED', borderColor: '#7C3AED' } : {}}></div>
           </button>
         </div>
       </div>

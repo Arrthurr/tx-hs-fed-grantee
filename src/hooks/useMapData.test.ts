@@ -70,26 +70,26 @@ describe('useMapData Hook', () => {
     
     expect(result.current.layerVisibility).toEqual({
       majorCities: false,
-      congressionalDistricts: false,
+      districtBoundaries: false,
       counties: false,
-      headStartPrograms: true
+      headStartPrograms: true,
     });
   });
 
   test('toggles layer visibility', () => {
     const { result } = renderHook(() => useMapData());
     
-    // Initially, headStartPrograms should be true and congressionalDistricts should be false
+    // Initially, headStartPrograms should be true and districtBoundaries should be false
     expect(result.current.layerVisibility.headStartPrograms).toBe(true);
-    expect(result.current.layerVisibility.congressionalDistricts).toBe(false);
+    expect(result.current.layerVisibility.districtBoundaries).toBe(false);
     
-    // Toggle congressionalDistricts layer
+    // Toggle districtBoundaries layer
     act(() => {
-      result.current.toggleLayer('congressionalDistricts');
+      result.current.toggleLayer('districtBoundaries');
     });
     
-    // Now congressionalDistricts should be true
-    expect(result.current.layerVisibility.congressionalDistricts).toBe(true);
+    // Now districtBoundaries should be true
+    expect(result.current.layerVisibility.districtBoundaries).toBe(true);
     
     // Toggle headStartPrograms layer
     act(() => {
@@ -103,13 +103,13 @@ describe('useMapData Hook', () => {
   test('sets specific layer visibility', () => {
     const { result } = renderHook(() => useMapData());
     
-    // Set congressionalDistricts to true
+    // Set districtBoundaries to true
     act(() => {
-      result.current.setLayerVisibilityState('congressionalDistricts', true);
+      result.current.setLayerVisibilityState('districtBoundaries', true);
     });
     
-    // congressionalDistricts should be true
-    expect(result.current.layerVisibility.congressionalDistricts).toBe(true);
+    // districtBoundaries should be true
+    expect(result.current.layerVisibility.districtBoundaries).toBe(true);
     
     // Set headStartPrograms to false
     act(() => {
@@ -232,16 +232,16 @@ describe('useMapData Hook', () => {
       expect(result.current.isLoadingDistricts).toBe(false);
     });
     
-    // Initially, congressionalDistricts layer is not visible
-    expect(result.current.layerVisibility.congressionalDistricts).toBe(false);
+    // Initially, districtBoundaries layer is not visible
+    expect(result.current.layerVisibility.districtBoundaries).toBe(false);
     
-    // Toggle congressionalDistricts layer on
+    // Toggle districtBoundaries layer on
     act(() => {
-      result.current.toggleLayer('congressionalDistricts');
+      result.current.toggleLayer('districtBoundaries');
     });
     
-    // Now congressionalDistricts layer should be visible
-    expect(result.current.layerVisibility.congressionalDistricts).toBe(true);
+    // Now districtBoundaries layer should be visible
+    expect(result.current.layerVisibility.districtBoundaries).toBe(true);
   });
 
   test('reloads data when calling load functions', async () => {

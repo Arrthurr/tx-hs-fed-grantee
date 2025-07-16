@@ -12,7 +12,6 @@ export const useMapData = () => {
   // Layer visibility state
   const [layerVisibility, setLayerVisibility] = useState<LayerVisibility>({
     majorCities: false, // We'll disable this for Head Start focus
-    congressionalDistricts: false, // Disable congressional districts by default (hides district center markers)
     districtBoundaries: false, // Disable district boundaries by default (hides geographic polygons)
     counties: false, // We'll disable this for Head Start focus
     headStartPrograms: true // Enable Head Start programs by default
@@ -454,7 +453,7 @@ export const useMapData = () => {
   /**
    * Get visible congressional districts
    */
-  const visibleCongressionalDistricts = layerVisibility.congressionalDistricts ? congressionalDistricts : [];
+  const visibleCongressionalDistricts = congressionalDistricts;
 
   /**
    * Check if any data is currently loading

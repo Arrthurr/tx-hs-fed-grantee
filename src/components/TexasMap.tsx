@@ -247,8 +247,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
     console.log('District boundaries effect triggered:', { 
       mapLoaded, 
       districtsLength: districts?.length, 
-      districtBoundariesVisible: layerVisibility.districtBoundaries,
-      congressionalDistrictsVisible: layerVisibility.congressionalDistricts 
+      districtBoundariesVisible: layerVisibility.districtBoundaries
     });
     if (mapLoaded && districts && districts.length > 0) {
       console.log('District boundaries visibility changed:', layerVisibility.districtBoundaries);
@@ -547,21 +546,17 @@ const TexasMap: React.FC<TexasMapProps> = ({
   // Map the layer visibility from useMapData to the format expected by MapControls
   const mapControlsLayerVisibility = {
     programs: layerVisibility.headStartPrograms,
-    districts: layerVisibility.congressionalDistricts,
-    districtBoundaries: layerVisibility.districtBoundaries // Use separate district boundaries layer
+    districtBoundaries: layerVisibility.districtBoundaries
   };
 
   // Map the toggle function to handle the conversion
-  const handleMapControlsToggle = (layer: 'programs' | 'districts' | 'districtBoundaries') => {
+  const handleMapControlsToggle = (layer: 'programs' | 'districtBoundaries') => {
     switch (layer) {
       case 'programs':
         toggleLayer('headStartPrograms');
         break;
-      case 'districts':
-        toggleLayer('congressionalDistricts');
-        break;
       case 'districtBoundaries':
-        toggleLayer('districtBoundaries'); // Use separate district boundaries layer
+        toggleLayer('districtBoundaries');
         break;
     }
   };
@@ -573,7 +568,6 @@ const TexasMap: React.FC<TexasMapProps> = ({
         layerVisibility={mapControlsLayerVisibility}
         onToggleLayer={handleMapControlsToggle}
         programCount={programs?.length || 0}
-        districtCount={districts?.length || 0}
       />
 
       {/* Google Map */}
@@ -622,44 +616,6 @@ const TexasMap: React.FC<TexasMapProps> = ({
                 }}
               >
                 +
-              </div>
-            </div>
-          </AdvancedMarker>
-        ))}
-
-        {/* Congressional District Center Markers - Controlled by Congressional Districts toggle */}
-        {layerVisibility.congressionalDistricts && districts && districts.map((district) => (
-          <AdvancedMarker
-            key={`district-${district.number}`}
-            position={district.center}
-            onClick={() => handleMarkerClick({
-              district,
-              position: district.center,
-              type: 'district'
-            })}
-            title={`Congressional District ${district.number} - ${district.representative}`}
-          >
-            <div 
-              style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                backgroundColor: getPartyColor(district.party) || getDistrictColor(district.number),
-                border: '2px solid #ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-              }}
-            >
-              <div 
-                style={{
-                  color: '#ffffff',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}
-              >
-                {district.number}
               </div>
             </div>
           </AdvancedMarker>
