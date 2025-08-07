@@ -10,19 +10,18 @@ declare const __VITE__: boolean | undefined;
  * Get environment variable value with fallback for different environments
  */
 export function getEnvVar(key: string): string | undefined {
-  // In test environment or Node.js, always use process.env
-  if (process.env.NODE_ENV === 'test' || typeof window === 'undefined' || typeof __VITE__ === 'undefined') {
+  // In test environment or Node.js, use process.env
+  if (typeof process !== 'undefined' && process.env && (process.env.NODE_ENV === 'test' || typeof window === 'undefined')) {
     return process.env[key];
   }
   
-  // For Vite builds, this will be replaced at build time
-  // In test environments, this code path won't be reached
-  if (typeof globalThis !== 'undefined' && 'import' in globalThis) {
-    // This is only for type checking - Jest won't execute this path
-    return process.env[key];
+  // In browser with Vite, use import.meta.env
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    return import.meta.env[key];
   }
   
-  return process.env[key];
+  // Fallback - should not reach here in normal circumstances
+  return undefined;
 }
 
 /**

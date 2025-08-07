@@ -162,7 +162,7 @@ export const useMapData = () => {
     } finally {
       setIsLoadingPrograms(false);
     }
-  }, [programsRetryCount]);
+  }, []);
 
   /**
    * Load congressional districts data from GeoJSON with error handling and retries
@@ -273,19 +273,29 @@ export const useMapData = () => {
     } finally {
       setIsLoadingDistricts(false);
     }
-  }, [districtsRetryCount]);
+  }, []);
 
   /**
    * Load congressional representative data from Congress.gov API
    */
+  // Track whether a Congress.gov request is already in progress
+  const congressDataLoadingRef = useRef(false);
+
   const loadCongressionalData = useCallback(async () => {
-    // Skip if no districts loaded yet or if API key is not available
-    if (congressionalDistricts.length === 0) {
+    console.log('loadCongressionalData called');
+
+    // Skip if a request is already in-flight or data has finished loading
+    if (congressDataLoadingRef.current || congressDataLoadedRef.current) {
+      console.log('Skipping Congressional API: already loading or loaded');
       return;
     }
+
+    // Mark request as in-progress immediately to prevent duplicate calls
+    congressDataLoadingRef.current = true;
     
     // Skip if already loaded
     if (congressDataLoadedRef.current) {
+      console.log('Skipping Congressional API: already loaded');
       return;
     }
     
@@ -305,8 +315,9 @@ export const useMapData = () => {
       console.log('Loading congressional representative data from Congress.gov API...');
       
       // Construct API URL for the 118th Congress, filtering for Texas representatives
-      const apiUrl = 'https://api.congress.gov/v3/member?api_key=' + apiKey + 
-                     '&congress=118&chamber=House&state=TX&format=json&limit=50';
+      const apiUrl = `https://api.congress.gov/v3/member/congress/118/TX/?api_key=${apiKey}&format=json&currentMember=true`;
+      
+      console.log('Congress.gov API URL:', apiUrl.replace(apiKey, '[API_KEY_HIDDEN]'));
       
       const response = await fetch(apiUrl);
       
@@ -323,31 +334,46 @@ export const useMapData = () => {
         throw new Error(`Failed to parse congressional data: ${parseError instanceof Error ? parseError.message : 'Invalid JSON'}`);
       }
       
+      // Log the full response for debugging
+      console.log('Congress.gov API Response:', JSON.stringify(congressData, null, 2));
+      
       // Validate data structure - check for different possible response formats
       let members: CongressApiMember[] = [];
       
-      if (congressData && congressData.results && Array.isArray(congressData.results)) {
-        // Standard format with results array
+      if (congressData && congressData.members && Array.isArray(congressData.members)) {
+        // Standard format with members array (most common for Congress.gov API)
+        members = congressData.members;
+      } else if (congressData && congressData.results && Array.isArray(congressData.results)) {
+        // Alternative format with results array
         members = congressData.results;
       } else if (congressData && Array.isArray(congressData)) {
         // Direct array format
         members = congressData as unknown as CongressApiMember[];
-      } else if (congressData && (congressData as any).members && Array.isArray((congressData as any).members)) {
-        // Alternative format with members array
-        members = (congressData as any).members;
       } else {
         // Log the actual response structure for debugging
         console.warn('Unexpected congressional data structure:', congressData);
+        console.warn('Available keys:', Object.keys(congressData || {}));
         throw new Error('Invalid congressional data: No valid member data found in response');
       }
       
       console.log(`Received data for ${members.length} representatives`);
       
+      // Filter for Texas representatives only
+      const texasMembers = members.filter(member => {
+        // Check state from various possible locations in the member data
+        const state = member.state || 
+                     (member.terms && member.terms[0] && member.terms[0].state) ||
+                     (member.terms && member.terms[0] && member.terms[0].stateCode);
+        return state === 'TX' || state === 'Texas';
+      });
+      
+      console.log(`Found ${texasMembers.length} Texas representatives out of ${members.length} total`);
+      
       // Update district data with representative information
       setCongressionalDistricts(prevDistricts => {
         const updatedDistricts = prevDistricts.map(district => {
           // Find matching representative by district number
-          const representative = members.find(member => {
+          const representative = texasMembers.find(member => {
             // Extract district number from API response
             const districtNumber = parseInt(member.district, 10);
             return districtNumber === district.number;
@@ -406,8 +432,10 @@ export const useMapData = () => {
       }
     } finally {
       setIsLoadingCongressData(false);
+      // Reset in-progress flag
+      congressDataLoadingRef.current = false;
     }
-  }, [congressDataRetryCount]);
+  }, []);
 
   /**
    * Get ordinal suffix for a number (e.g., 1st, 2nd, 3rd)
