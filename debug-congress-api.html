@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Congress.gov API Debug</title>
+</head>
+<body>
+    <h1>Congress.gov API Test</h1>
+    <button onclick="testAPI()">Test Congress.gov API</button>
+    <div id="output"></div>
+    
+    <script>
+        async function testAPI() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Testing API...';
+            
+            try {
+                // You'll need to replace YOUR_API_KEY with your actual key
+                const apiKey = prompt('Enter your Congress.gov API key:');
+                if (!apiKey) {
+                    output.innerHTML = 'API key required';
+                    return;
+                }
+                
+                const apiUrl = `https://api.congress.gov/v3/member/congress/118/house?api_key=${apiKey}&currentMember=true&format=json&limit=50`;
+                console.log('Testing URL:', apiUrl.replace(apiKey, '[HIDDEN]'));
+                
+                const response = await fetch(apiUrl);
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('Full response:', data);
+                
+                // Check response structure
+                if (data.members && Array.isArray(data.members)) {
+                    const texasMembers = data.members.filter(member => {
+                        const state = member.state || 
+                                     (member.terms && member.terms[0] && member.terms[0].state) ||
+                                     (member.terms && member.terms[0] && member.terms[0].stateCode);
+                        return state === 'TX' || state === 'Texas';
+                    });
+                    
+                    output.innerHTML = `
+                        <h3>Success!</h3>
+                        <p>Total members: ${data.members.length}</p>
+                        <p>Texas members: ${texasMembers.length}</p>
+                        <pre>${JSON.stringify(texasMembers.slice(0, 2), null, 2)}</pre>
+                    `;
+                } else {
+                    output.innerHTML = `
+                        <h3>Unexpected Response Structure</h3>
+                        <p>Available keys: ${Object.keys(data).join(', ')}</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('API Test Error:', error);
+                output.innerHTML = `
+                    <h3>Error</h3>
+                    <p>${error.message}</p>
+                    <p>Check browser console for details</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

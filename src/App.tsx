@@ -261,9 +261,9 @@ const App: React.FC = () => {
                 <div>
                   <h1 className="text-2xl font-bold text-tx-gray-900 flex items-center gap-2">
                     Texas Head Start Federal Grantee Programs
-                    <span className="text-sm font-medium bg-tx-orange-100 text-tx-orange-700 px-2 py-1 rounded-full">
+                    {/* <span className="text-sm font-medium bg-tx-orange-100 text-tx-orange-700 px-2 py-1 rounded-full">
                       Public Preview
-                    </span>
+                    </span> */}
                   </h1>
                   <p className="text-sm text-tx-gray-600 mt-1">
                     Explore Head Start and Early Head Start program funding and congressional districts across Texas
@@ -271,7 +271,7 @@ const App: React.FC = () => {
                 </div>
               </div>
               
-              {/* Header stats and Bolt logo */}
+              {/* Header stats */}
               <div className="flex items-center space-x-8">
                 <div className="hidden lg:flex items-center space-x-8">
                   <div className="text-center">
