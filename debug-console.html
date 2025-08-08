@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Console - Check App Errors</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: #4fc3f7;
+            border-bottom: 2px solid #4fc3f7;
+            padding-bottom: 10px;
+        }
+        .error {
+            background: #5c2626;
+            color: #ff8a80;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #ff5252;
+        }
+        .success {
+            background: #1b5e20;
+            color: #69f0ae;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #00e676;
+        }
+        .warning {
+            background: #5d4037;
+            color: #ffb74d;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #ff9800;
+        }
+        .log-entry {
+            background: #2d2d2d;
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #444;
+            margin: 20px 0;
+        }
+        button {
+            background: #4fc3f7;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #29b6f6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 App Debug Console</h1>
+        
+        <div id="status" class="warning">Checking application status...</div>
+        
+        <div>
+            <button onclick="checkApp()">🔄 Check App Status</button>
+            <button onclick="clearLogs()">🗑️ Clear Logs</button>
+            <button onclick="window.open('http://localhost:5173', '_blank')">🌐 Open App</button>
+        </div>
+
+        <h2>Console Output:</h2>
+        <div id="console-output"></div>
+
+        <h2>App Frame (check browser console for errors):</h2>
+        <iframe id="app-frame" src="about:blank"></iframe>
+    </div>
+
+    <script>
+        const consoleOutput = document.getElementById('console-output');
+        const statusDiv = document.getElementById('status');
+        let logs = [];
+
+        function addLog(message, type = 'log') {
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            const timestamp = new Date().toISOString().substr(11, 8);
+            
+            let prefix = '📝';
+            if (type === 'error') {
+                prefix = '❌';
+                logEntry.style.background = '#3e2723';
+                logEntry.style.color = '#ff8a80';
+            } else if (type === 'warning') {
+                prefix = '⚠️';
+                logEntry.style.background = '#4a3c28';
+                logEntry.style.color = '#ffb74d';
+            } else if (type === 'success') {
+                prefix = '✅';
+                logEntry.style.background = '#1b4332';
+                logEntry.style.color = '#69f0ae';
+            }
+            
+            logEntry.textContent = `[${timestamp}] ${prefix} ${message}`;
+            consoleOutput.appendChild(logEntry);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        function clearLogs() {
+            consoleOutput.innerHTML = '';
+            addLog('Logs cleared', 'success');
+        }
+
+        async function checkApp() {
+            statusDiv.className = 'warning';
+            statusDiv.textContent = 'Checking application...';
+            consoleOutput.innerHTML = '';
+            
+            try {
+                // Check if the server is responding
+                addLog('Checking server at http://localhost:5173...');
+                const response = await fetch('http://localhost:5173');
+                
+                if (response.ok) {
+                    addLog('✓ Server is responding (status: ' + response.status + ')', 'success');
+                    
+                    // Check for Vite HMR
+                    addLog('Checking Vite HMR connection...');
+                    
+                    // Load the app in iframe to capture console errors
+                    const iframe = document.getElementById('app-frame');
+                    
+                    // Set up message listener for iframe console
+                    window.addEventListener('message', (event) => {
+                        if (event.data.type === 'console') {
+                            addLog(`[iframe] ${event.data.message}`, event.data.level);
+                        }
+                    });
+                    
+                    iframe.src = 'http://localhost:5173';
+                    
+                    statusDiv.className = 'success';
+                    statusDiv.textContent = '✅ Server is running! Check the iframe below and browser console for any errors.';
+                    
+                    // Additional checks
+                    setTimeout(async () => {
+                        // Check for common resources
+                        try {
+                            const checks = [
+                                { url: 'http://localhost:5173/src/main.tsx', name: 'main.tsx' },
+                                { url: 'http://localhost:5173/src/App.tsx', name: 'App.tsx' },
+                                { url: 'http://localhost:5173/src/index.css', name: 'index.css' }
+                            ];
+                            
+                            for (const check of checks) {
+                                try {
+                                    const res = await fetch(check.url);
+                                    if (res.ok) {
+                                        addLog(`✓ ${check.name} is accessible`, 'success');
+                                    } else {
+                                        addLog(`✗ ${check.name} returned status ${res.status}`, 'error');
+                                    }
+                                } catch (e) {
+                                    addLog(`✗ Failed to load ${check.name}: ${e.message}`, 'error');
+                                }
+                            }
+                        } catch (e) {
+                            addLog(`Error checking resources: ${e.message}`, 'error');
+                        }
+                        
+                        // Check if React is loaded
+                        try {
+                            const iframeWindow = iframe.contentWindow;
+                            if (iframeWindow) {
+                                // Check for React
+                                if (iframeWindow.React) {
+                                    addLog('✓ React is loaded in the app', 'success');
+                                } else {
+                                    addLog('⚠️ React not detected (may still be loading)', 'warning');
+                                }
+                                
+                                // Check for Google Maps
+                                if (iframeWindow.google && iframeWindow.google.maps) {
+                                    addLog('✓ Google Maps API is loaded', 'success');
+                                } else {
+                                    addLog('⚠️ Google Maps API not detected (may still be loading)', 'warning');
+                                }
+                                
+                                // Check for any errors in the iframe console
+                                const originalError = iframeWindow.console.error;
+                                iframeWindow.console.error = function(...args) {
+                                    addLog('Console Error: ' + args.join(' '), 'error');
+                                    originalError.apply(this, args);
+                                };
+                            }
+                        } catch (e) {
+                            addLog('Could not access iframe window (CORS)', 'warning');
+                        }
+                    }, 2000);
+                    
+                } else {
+                    addLog(`Server returned status ${response.status}`, 'error');
+                    statusDiv.className = 'error';
+                    statusDiv.textContent = `❌ Server error (status: ${response.status})`;
+                }
+            } catch (error) {
+                addLog(`Failed to connect to server: ${error.message}`, 'error');
+                statusDiv.className = 'error';
+                statusDiv.textContent = '❌ Cannot connect to server at http://localhost:5173';
+                
+                addLog('Possible issues:', 'warning');
+                addLog('1. Dev server is not running (run: npm run dev)', 'warning');
+                addLog('2. Server is running on a different port', 'warning');
+                addLog('3. Firewall or security software blocking connection', 'warning');
+            }
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            setTimeout(checkApp, 500);
+        });
+
+        // Listen for console messages from the main window
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        const originalConsoleLog = console.log;
+
+        console.error = function(...args) {
+            addLog('Main Console Error: ' + args.join(' '), 'error');
+            originalConsoleError.apply(this, args);
+        };
+
+        console.warn = function(...args) {
+            addLog('Main Console Warning: ' + args.join(' '), 'warning');
+            originalConsoleWarn.apply(this, args);
+        };
+
+        // Capture unhandled errors
+        window.addEventListener('error', (event) => {
+            addLog(`Unhandled Error: ${event.message} at ${event.filename}:${event.lineno}:${event.colno}`, 'error');
+        });
+
+        window.addEventListener('unhandledrejection', (event) => {
+            addLog(`Unhandled Promise Rejection: ${event.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>
