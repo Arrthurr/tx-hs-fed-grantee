@@ -596,11 +596,12 @@ const TexasMap: React.FC<TexasMapProps> = ({
             title={program.name}
           >
             <div 
+              className="marker-headstart"
               style={{
                 width: '24px',
                 height: '24px',
                 borderRadius: '50%',
-                backgroundColor: '#059669',
+                backgroundColor: 'var(--headstart-primary)',
                 border: '2px solid #ffffff',
                 display: 'flex',
                 alignItems: 'center',

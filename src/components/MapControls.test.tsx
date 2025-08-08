@@ -55,7 +55,7 @@ describe('MapControls Component', () => {
   test('District Boundaries button shows active state when visible', () => {
     render(<MapControls {...mockProps} layerVisibility={{ ...mockProps.layerVisibility, districtBoundaries: true }} />);
     const boundariesButton = screen.getByTitle('Toggle District Boundaries');
-    expect(boundariesButton).toHaveClass('bg-tx-blue-50');
+    expect(boundariesButton).toHaveClass('bg-district-accent');
   });
 
   test('buttons have correct aria-pressed attributes', () => {
