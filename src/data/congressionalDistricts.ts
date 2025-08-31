@@ -1,7 +1,6 @@
-import { 
-  CongressionalDistrictFeature, 
-  CongressionalDistrictProperties, 
-  CongressionalDistrictFeatureCollection 
+import {
+  CongressionalDistrictFeature,
+  CongressionalDistrictFeatureCollection
 } from '../types/maps';
 
 /**
@@ -281,4 +280,4 @@ export const createDistrictFeatureCollection = (districts: CongressionalDistrict
     type: 'FeatureCollection',
     features: districts
   };
-}; 
+};

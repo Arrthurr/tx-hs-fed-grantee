@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, X, ChevronDown, ChevronUp, Accessibility } from 'lucide-react';
+import { AlertCircle, CheckCircle, X, Accessibility } from 'lucide-react';
 
 /**
  * Accessibility issue type

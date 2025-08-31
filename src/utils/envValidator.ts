@@ -4,7 +4,6 @@
  */
 
 // Type guard to check if we're in a browser environment with Vite
-declare const __VITE__: boolean | undefined;
 
 /**
  * Get environment variable value with fallback for different environments
@@ -66,4 +65,4 @@ export function getGoogleMapsMapId(): string | undefined {
  */
 export function getCongressApiKey(): string | undefined {
   return getEnvVar('VITE_CONGRESS_API_KEY');
-} 
+}
