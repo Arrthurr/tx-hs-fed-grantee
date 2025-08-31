@@ -102,6 +102,9 @@ const TexasMap: React.FC<TexasMapProps> = ({
   // State for map loading
   const [mapLoaded, setMapLoaded] = useState(false);
 
+  // Reference to the map container for drag boundary calculations
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+
   /**
    * Default map center coordinates (Texas geographic center)
    * Latitude: 31.0545, Longitude: -97.5635
@@ -562,12 +565,13 @@ const TexasMap: React.FC<TexasMapProps> = ({
   };
 
   return (
-    <div className={`relative ${className}`} style={{ height }}>
+    <div ref={mapContainerRef} className={`relative ${className}`} style={{ height }}>
       {/* Map Controls */}
       <MapControls
         layerVisibility={mapControlsLayerVisibility}
         onToggleLayer={handleMapControlsToggle}
         programCount={programs?.length || 0}
+        mapContainerRef={mapContainerRef}
       />
 
       {/* Google Map */}

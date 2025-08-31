@@ -135,8 +135,8 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
-  --z-map-controls: 10;
-  --z-info-window: 100;
+  --z-map-controls: 1000;
+  --z-info-window: 1100;
 }
 
 /* Dark mode overrides */
@@ -227,13 +227,40 @@
   .fade-in {
     animation: fadeIn 0.3s ease-in-out;
   }
-  
+
   .slide-up {
     animation: slideUp 0.3s ease-out;
   }
-  
+
   .scale-in {
     animation: scaleIn 0.2s ease-out;
+  }
+
+  /* Drag and drop utilities */
+  .drag-handle {
+    cursor: grab;
+    pointer-events: auto !important;
+  }
+
+  .drag-handle:active {
+    cursor: grabbing;
+  }
+
+  .dragging {
+    z-index: 1000;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .drag-preview {
+    opacity: 0.8;
+    transform: rotate(2deg);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Ensure map controls are above Google Maps */
+  .z-map-controls {
+    z-index: var(--z-map-controls) !important;
   }
 }
 

@@ -22,7 +22,7 @@ const App: React.FC = () => {
   const [mapsReady, setMapsReady] = useState(false);
 
   // Get map data and check for data loading errors
-  const { hasErrors, programsError, districtsError, congressDataError, retryLoading, isLoading } = useMapData();
+  const { hasErrors, programsError, districtsError, congressDataError, retryLoading } = useMapData();
 
   /**
    * Check if Google Maps API constructors are available and callable

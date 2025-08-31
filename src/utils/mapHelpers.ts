@@ -107,8 +107,8 @@ export const calculateBoundingBox = (
   radiusKm: number
 ): { north: number; south: number; east: number; west: number } => {
   // Earth's radius in kilometers
-  const earthRadius = 6371;
-  
+  // const earthRadius = 6371;
+
   // Convert radius from kilometers to degrees latitude
   // (1 degree latitude is approximately 111 kilometers)
   const latDelta = radiusKm / 111;
@@ -192,7 +192,7 @@ export const getZoomLevelForBounds = (
   
   // Simple logarithmic scale for zoom level
   // Smaller delta = higher zoom level
-  let zoom = 14 - Math.log2(maxDelta * 100);
+  const zoom = 14 - Math.log2(maxDelta * 100);
   
   // Clamp to min/max zoom levels
   return Math.min(Math.max(Math.round(zoom), minZoom), maxZoom);
