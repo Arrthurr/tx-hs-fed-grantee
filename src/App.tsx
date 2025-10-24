@@ -318,9 +318,9 @@ const App: React.FC = () => {
 
             {/* Google Maps API Provider and Map */}
             <div className="relative">
-              {renderContent()}
+            {renderContent()}
             </div>
-          </div>
+                     </div>
 
           {/* Footer */}
           <footer className="mt-8 text-center" role="contentinfo">

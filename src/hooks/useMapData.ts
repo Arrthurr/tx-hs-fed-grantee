@@ -32,6 +32,8 @@ export const useMapData = () => {
   const [districtsError, setDistrictsError] = useState<string | null>(null);
   const [congressDataError, setCongressDataError] = useState<string | null>(null);
 
+
+
   // Retry counters
   const [programsRetryCount, setProgramsRetryCount] = useState(0);
   const [districtsRetryCount, setDistrictsRetryCount] = useState(0);
@@ -336,7 +338,7 @@ export const useMapData = () => {
       
       // Log the full response for debugging
       console.log('Congress.gov API Response:', JSON.stringify(congressData, null, 2));
-      
+
       // Validate data structure - check for different possible response formats
       let members: CongressApiMember[] = [];
       
@@ -383,7 +385,7 @@ export const useMapData = () => {
             return {
               ...district,
               representative: representative.name,
-              party: representative.party,
+              party: representative.partyName,
               photoUrl: representative.depiction?.imageUrl,
               contact: {
                 phone: representative.contactInformation?.phoneNumber,
