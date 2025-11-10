@@ -1,0 +1,59 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e7]:
+      - img "Texas logo" [ref=e8]
+      - generic [ref=e9]:
+        - heading "Texas Head Start Federal Grantee Programs" [level=1] [ref=e10]
+        - paragraph [ref=e11]: Explore Head Start and Early Head Start program funding and congressional districts across Texas
+  - main [ref=e12]:
+    - generic [ref=e13]:
+      - generic [ref=e18]:
+        - heading "Federal Grantee Head Start Programs" [level=2] [ref=e19]
+        - paragraph [ref=e20]: Click on program markers to view details. Toggle layers to explore Head Start programs and congressional districts.
+      - generic:
+        - alert:
+          - generic [ref=e21]:
+            - img [ref=e23]
+            - heading "Configuration Required" [level=2] [ref=e26]
+            - paragraph [ref=e27]: Google Maps API key is not configured. Please add VITE_GOOGLE_MAPS_API_KEY to your .env.local file.
+            - generic [ref=e28]:
+              - button "Retry loading map" [ref=e29] [cursor=pointer]:
+                - img [ref=e30]
+                - generic [ref=e35]: Retry Loading
+              - link "Open Google Cloud Console in a new tab" [ref=e36] [cursor=pointer]:
+                - /url: https://console.cloud.google.com/google/maps-apis/
+                - img [ref=e37]
+                - generic [ref=e41]: Open Google Cloud Console
+            - generic [ref=e42]:
+              - generic [ref=e43]:
+                - img [ref=e44]
+                - heading "Setup Instructions" [level=3] [ref=e47]
+              - generic [ref=e48]:
+                - generic [ref=e49]:
+                  - strong [ref=e50]: "Google Maps API:"
+                  - list [ref=e51]:
+                    - listitem [ref=e52]: Create a Google Cloud Platform project
+                    - listitem [ref=e53]: Enable the Maps JavaScript API
+                    - listitem [ref=e54]: Create an API key in Credentials
+                    - listitem [ref=e55]:
+                      - text: Add your API key to
+                      - code [ref=e56]: VITE_GOOGLE_MAPS_API_KEY
+                - generic [ref=e57]:
+                  - strong [ref=e58]: "Congress.gov API (Optional):"
+                  - list [ref=e59]:
+                    - listitem [ref=e60]:
+                      - text: Visit
+                      - link "Congress.gov API" [ref=e61] [cursor=pointer]:
+                        - /url: https://api.congress.gov/
+                    - listitem [ref=e62]: Sign up for an API key for enhanced congressional data
+                    - listitem [ref=e63]:
+                      - text: Add it to
+                      - code [ref=e64]: VITE_CONGRESS_API_KEY
+    - contentinfo [ref=e65]:
+      - generic [ref=e66]:
+        - paragraph [ref=e67]: Texas Head Start Interactive Map - An internal analysis tool for program directors and policymakers
+        - paragraph [ref=e68]: "Data sources: Head Start Program Information Report (PIR) • U.S. Census Bureau"
+```
