@@ -203,8 +203,10 @@ export interface CongressApiMember {
   name: string;
   /** Member's party affiliation */
   party: string;
+  /** Member's party name */
+  partyName?: string;
   /** Member's state */
-  state: string;
+  state?: string;
   /** Member's district number */
   district: string;
   /** Member's URL on Congress.gov */
@@ -215,7 +217,11 @@ export interface CongressApiMember {
     imageUrl?: string;
   };
   /** Member's terms in office */
-  terms?: {
+  terms?: Array<{
+    /** State code */
+    state?: string;
+    /** State code alternative */
+    stateCode?: string;
     /** Current term information */
     current?: {
       /** Committees the member serves on */
@@ -228,7 +234,7 @@ export interface CongressApiMember {
         isChair?: boolean;
       }[];
     };
-  }[];
+  }>;
   /** Member's contact information */
   contactInformation?: {
     /** Office phone number */
@@ -247,13 +253,15 @@ export interface CongressApiMember {
  */
 export interface CongressApiResponse {
   /** API response status */
-  status: string;
+  status?: string;
   /** API response copyright */
-  copyright: string;
+  copyright?: string;
   /** API response results */
-  results: CongressApiMember[];
+  results?: CongressApiMember[];
+  /** API response members array */
+  members?: CongressApiMember[];
   /** API response pagination */
-  pagination: {
+  pagination?: {
     /** Count of results */
     count: number;
     /** Next page URL */

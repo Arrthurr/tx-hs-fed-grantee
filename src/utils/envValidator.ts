@@ -14,9 +14,15 @@ export function getEnvVar(key: string): string | undefined {
     return process.env[key];
   }
   
-  // In browser with Vite, use import.meta.env
-  if (typeof import.meta !== 'undefined' && import.meta.env) {
-    return import.meta.env[key];
+  // In browser with Vite, try to access import.meta.env via globalThis or window
+  try {
+    // @ts-ignore
+    const globalEnv = (typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : {}) as any;
+    if (globalEnv.import && globalEnv.import.meta && globalEnv.import.meta.env) {
+      return globalEnv.import.meta.env[key];
+    }
+  } catch {
+    // Ignore errors when accessing import.meta
   }
   
   // Fallback - should not reach here in normal circumstances

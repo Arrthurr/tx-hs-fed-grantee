@@ -52,7 +52,7 @@ const deviceConfigs = {
  */
 const ResponsiveWrapper: React.FC<ResponsiveWrapperProps> = ({
   children,
-  showDeviceSelector = import.meta.env.DEV // Only show in development mode
+  showDeviceSelector = false // Dev mode detection handled in property definition
 }) => {
   // State for selected device size
   const [deviceSize, setDeviceSize] = useState<DeviceSize>('full');
