@@ -187,7 +187,7 @@ export const isPointInPolygon = (
  * Check if point is inside a single polygon using ray casting algorithm
  * @param lat - Latitude of the point
  * @param lng - Longitude of the point
- * @param coordinates - Polygon coordinates
+ * @param coordinates - Polygon coordinates (in GeoJSON format: [lng, lat])
  * @returns True if point is inside polygon
  */
 export const isPointInSinglePolygon = (lat: number, lng: number, coordinates: number[][][]): boolean => {
@@ -197,10 +197,11 @@ export const isPointInSinglePolygon = (lat: number, lng: number, coordinates: nu
   let inside = false;
   
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i][1]; // longitude
-    const yi = polygon[i][0]; // latitude
-    const xj = polygon[j][1]; // longitude
-    const yj = polygon[j][0]; // latitude
+    // GeoJSON coordinates are [longitude, latitude]
+    const xi = polygon[i][0]; // longitude
+    const yi = polygon[i][1]; // latitude
+    const xj = polygon[j][0]; // longitude
+    const yj = polygon[j][1]; // latitude
     
     if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
       inside = !inside;

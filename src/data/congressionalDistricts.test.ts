@@ -370,13 +370,13 @@ describe('Congressional Districts Data Processing', () => {
 
     describe('isPointInSinglePolygon', () => {
       test('returns true for point inside polygon', () => {
-        // Point inside the square
+        // Point inside the square (lat 30-31, lng -97 to -96)
         expect(isPointInSinglePolygon(30.5, -96.5, squarePolygon.coordinates)).toBe(true);
       });
 
       test('returns false for point outside polygon', () => {
-        // Point outside the square
-        expect(isPointInSinglePolygon(32.0, -98.0, squarePolygon.coordinates)).toBe(false);
+        // Point way outside the square (lat 32, lng -100)
+        expect(isPointInSinglePolygon(32.0, -100.0, squarePolygon.coordinates)).toBe(false);
       });
 
       test('handles edge cases correctly', () => {
@@ -390,35 +390,35 @@ describe('Congressional Districts Data Processing', () => {
 
     describe('isPointInMultiPolygon', () => {
       test('returns true for point inside any polygon', () => {
-        // Point inside first polygon
+        // Point inside first polygon (lat 30-31, lng -97 to -96)
         expect(isPointInMultiPolygon(30.5, -96.5, multiPolygon.coordinates)).toBe(true);
         
-        // Point inside second polygon
+        // Point inside second polygon (lat 29-30, lng -95 to -94)
         expect(isPointInMultiPolygon(29.5, -94.5, multiPolygon.coordinates)).toBe(true);
       });
 
       test('returns false for point outside all polygons', () => {
-        // Point outside both polygons
-        expect(isPointInMultiPolygon(32.0, -98.0, multiPolygon.coordinates)).toBe(false);
+        // Point way outside both polygons (lat 35, lng -100)
+        expect(isPointInMultiPolygon(35.0, -100.0, multiPolygon.coordinates)).toBe(false);
       });
     });
 
     describe('isPointInPolygon', () => {
       test('handles Polygon geometry correctly', () => {
         expect(isPointInPolygon(30.5, -96.5, squarePolygon)).toBe(true);
-        expect(isPointInPolygon(32.0, -98.0, squarePolygon)).toBe(false);
+        expect(isPointInPolygon(32.0, -100.0, squarePolygon)).toBe(false);
       });
 
       test('handles MultiPolygon geometry correctly', () => {
         expect(isPointInPolygon(30.5, -96.5, multiPolygon)).toBe(true);
         expect(isPointInPolygon(29.5, -94.5, multiPolygon)).toBe(true);
-        expect(isPointInPolygon(32.0, -98.0, multiPolygon)).toBe(false);
+        expect(isPointInPolygon(35.0, -100.0, multiPolygon)).toBe(false);
       });
     });
 
     describe('getCongressionalDistrictAtPoint', () => {
       test('returns district containing the point', () => {
-        // Point inside first district
+        // Point inside first district (lat 30-31, lng -97 to -96)
         const district = getCongressionalDistrictAtPoint(mockProcessedDistricts, 30.5, -96.5);
         
         expect(district).toBeDefined();
@@ -426,8 +426,8 @@ describe('Congressional Districts Data Processing', () => {
       });
 
       test('returns undefined when point is not in any district', () => {
-        // Point outside all districts
-        const district = getCongressionalDistrictAtPoint(mockProcessedDistricts, 35.0, -100.0);
+        // Point way outside all districts (lat 25, lng -93) - completely outside all ranges
+        const district = getCongressionalDistrictAtPoint(mockProcessedDistricts, 25.0, -93.0);
         
         expect(district).toBeUndefined();
       });

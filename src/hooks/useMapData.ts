@@ -385,7 +385,7 @@ export const useMapData = () => {
             return {
               ...district,
               representative: representative.name,
-              party: representative.partyName,
+              party: representative.partyName || representative.party,
               photoUrl: representative.depiction?.imageUrl,
               contact: {
                 phone: representative.contactInformation?.phoneNumber,

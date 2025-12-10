@@ -1,3 +1,4 @@
+import React from 'react';
 import '@testing-library/jest-dom';
 
 // Mock environment variables
@@ -89,39 +90,9 @@ jest.mock('@vis.gl/react-google-maps', () => ({
   useMap: jest.fn().mockReturnValue(mockMap),
 }));
 
-// Mock React for the components above
-const React = require('react');
+// React is already imported at the top of this file
 
-// Mock components that might not exist yet or have test IDs
-jest.mock('./components/LoadingSpinner', () => ({
-  __esModule: true,
-  default: jest.fn(({ message, size }: any) => 
-    React.createElement('div', {
-      'data-testid': 'loading-spinner',
-      className: `loading-spinner ${size || ''}`
-    }, message || 'Loading...')
-  ),
-}));
-
-jest.mock('./components/ErrorDisplay', () => ({
-  __esModule: true,
-  default: jest.fn(({ error, onRetry, errorType }: any) => 
-    React.createElement('div', {
-      'data-testid': 'error-display',
-      className: `error-display ${errorType || ''}`
-    }, [
-      React.createElement('div', { 
-        key: 'error-message',
-        className: 'error-message' 
-      }, error),
-      onRetry && React.createElement('button', {
-        key: 'retry-button',
-        onClick: onRetry,
-        'data-testid': 'retry-button'
-      }, 'Retry')
-    ])
-  ),
-}));
+// Removed mocks for LoadingSpinner and ErrorDisplay to allow their direct unit testing
 
 // Mock utility functions with comprehensive implementations
 jest.mock('./utils/mapHelpers', () => ({
@@ -292,20 +263,120 @@ jest.mock('./data/congressionalDistricts', () => ({
     );
   },
   getCongressionalDistrictAtPoint: (districts: any[], lat: number, lng: number) => {
-    // Simple mock - just return first district
-    return districts.length > 0 ? districts[0] : undefined;
+    // Find the first district that contains the point
+    return districts.find((district: any) => {
+      // Use isPointInPolygon to check if point is in this district
+      if (!district.geometry || !district.geometry.coordinates) return false;
+      
+      if (district.geometry.type === 'Polygon') {
+        const coordinates = district.geometry.coordinates as number[][][];
+        if (coordinates.length === 0) return false;
+        
+        const polygon = coordinates[0]; // Outer ring
+        let inside = false;
+        
+        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+          const xi = polygon[i][0], yi = polygon[i][1]; // [lng, lat]
+          const xj = polygon[j][0], yj = polygon[j][1]; // [lng, lat]
+          
+          const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      } else if (district.geometry.type === 'MultiPolygon') {
+        const coordinates = district.geometry.coordinates as number[][][][];
+        return coordinates.some(polygon => {
+          if (!polygon || polygon.length === 0) return false;
+          
+          const ring = polygon[0];
+          let inside = false;
+          
+          for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const xi = ring[i][0], yi = ring[i][1]; // [lng, lat]
+            const xj = ring[j][0], yj = ring[j][1]; // [lng, lat]
+            
+            const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+          }
+          return inside;
+        });
+      }
+      return false;
+    });
   },
   isPointInPolygon: (lat: number, lng: number, geometry: any) => {
-    // Simple mock - return true for basic bounds check
-    return lat >= 25.8 && lat <= 36.5 && lng >= -106.6 && lng <= -93.5;
+    // Ray casting algorithm for point-in-polygon check
+    if (!geometry || !geometry.coordinates) return false;
+    
+    if (geometry.type === 'Polygon') {
+      const coordinates = geometry.coordinates as number[][][];
+      if (coordinates.length === 0) return false;
+      
+      const polygon = coordinates[0]; // Outer ring
+      let inside = false;
+      
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const xi = polygon[i][0], yi = polygon[i][1]; // [lng, lat]
+        const xj = polygon[j][0], yj = polygon[j][1]; // [lng, lat]
+        
+        const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    } else if (geometry.type === 'MultiPolygon') {
+      const coordinates = geometry.coordinates as number[][][][];
+      return coordinates.some(polygon => {
+        let inside = false;
+        const ring = polygon[0];
+        
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+          const xi = ring[i][0], yi = ring[i][1]; // [lng, lat]
+          const xj = ring[j][0], yj = ring[j][1]; // [lng, lat]
+          
+          const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
+          if (intersect) inside = !inside;
+        }
+        return inside;
+      });
+    }
+    return false;
   },
   isPointInSinglePolygon: (lat: number, lng: number, coordinates: any) => {
-    // Simple mock - return true for basic bounds check
-    return lat >= 25.8 && lat <= 36.5 && lng >= -106.6 && lng <= -93.5;
+    // Ray casting algorithm for point-in-polygon check (GeoJSON format: [lng, lat])
+    if (!coordinates || coordinates.length === 0) return false;
+    
+    const polygon = coordinates[0]; // Outer ring
+    let inside = false;
+    
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const xi = polygon[i][0], yi = polygon[i][1]; // [lng, lat]
+      const xj = polygon[j][0], yj = polygon[j][1]; // [lng, lat]
+      
+      // Check if point latitude is within the edge latitude range and crosses the vertical line at lng
+      const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
   },
   isPointInMultiPolygon: (lat: number, lng: number, coordinates: any) => {
-    // Simple mock - return true for basic bounds check
-    return lat >= 25.8 && lat <= 36.5 && lng >= -106.6 && lng <= -93.5;
+    // Ray casting algorithm for MultiPolygon
+    if (!coordinates || coordinates.length === 0) return false;
+    
+    return coordinates.some((polygon: number[][][]) => {
+      if (!polygon || polygon.length === 0) return false;
+      
+      const ring = polygon[0];
+      let inside = false;
+      
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0], yi = ring[i][1]; // [lng, lat]
+        const xj = ring[j][0], yj = ring[j][1]; // [lng, lat]
+        
+        const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+      }
+      return inside;
+    });
   },
   getCongressionalDistrictStats: (districts: any[]) => {
     if (districts.length === 0) {

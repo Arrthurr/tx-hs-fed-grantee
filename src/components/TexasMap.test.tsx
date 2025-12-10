@@ -3,17 +3,35 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import TexasMap from './TexasMap';
 import { useMapData } from '../hooks/useMapData';
-import { APIProvider } from '@vis.gl/react-google-maps';
 
 // Mock the custom hooks
 jest.mock('../hooks/useMapData');
 
-// Mock the API Provider
+// Mock the API Provider (already mocked in setupTests.ts, but override APIProvider here)
 jest.mock('@vis.gl/react-google-maps', () => ({
-  ...jest.requireActual('@vis.gl/react-google-maps'),
   APIProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="api-provider">{children}</div>
   ),
+  Map: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="google-map">{children}</div>
+  ),
+  AdvancedMarker: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="advanced-marker">{children}</div>
+  ),
+  Pin: () => <div data-testid="map-pin" />,
+  InfoWindow: ({ children, onCloseClick }: { children: React.ReactNode; onCloseClick?: () => void }) => (
+    <div data-testid="info-window" onClick={onCloseClick}>{children}</div>
+  ),
+  useMap: jest.fn().mockReturnValue({
+    panTo: jest.fn(),
+    setZoom: jest.fn(),
+    fitBounds: jest.fn(),
+    setCenter: jest.fn(),
+    getZoom: jest.fn().mockReturnValue(10),
+    getCenter: jest.fn().mockReturnValue({ lat: () => 31.0, lng: () => -99.0 }),
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+  }),
 }));
 
 // Sample test data
@@ -113,7 +131,6 @@ describe('TexasMap Component', () => {
       rawDistrictFeatures: mockRawDistrictFeatures,
       layerVisibility: {
         majorCities: false,
-        congressionalDistricts: false,
         districtBoundaries: false,
         counties: false,
         headStartPrograms: true,
@@ -136,11 +153,15 @@ describe('TexasMap Component', () => {
   });
 
   // Mock the TexasMap component with API Provider wrapper
-  const TexasMapWithProvider = () => (
-    <APIProvider apiKey="test-api-key">
-      <TexasMap />
-    </APIProvider>
-  );
+  const TexasMapWithProvider = () => {
+    // Use the mocked APIProvider which is already set up in the jest.mock above
+    const { APIProvider: MockedAPIProvider } = require('@vis.gl/react-google-maps');
+    return (
+      <MockedAPIProvider apiKey="test-api-key">
+        <TexasMap />
+      </MockedAPIProvider>
+    );
+  };
 
   test('renders the map component', () => {
     render(<TexasMapWithProvider />);
@@ -165,7 +186,6 @@ describe('TexasMap Component', () => {
       ...mockUseMapData(),
       layerVisibility: {
         majorCities: false,
-        congressionalDistricts: false,
         districtBoundaries: false,
         counties: false,
         headStartPrograms: false,
