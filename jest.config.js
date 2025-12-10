@@ -20,10 +20,16 @@ export default {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       useESM: false,
+      isolatedModules: true,
       tsconfig: {
         jsx: 'react-jsx',
         esModuleInterop: true,
-        allowSyntheticDefaultImports: true
+        allowSyntheticDefaultImports: true,
+        target: 'ES2020',
+        module: 'ES2020',
+        lib: ['ES2020', 'DOM', 'DOM.Iterable'],
+        skipLibCheck: true,
+        types: ['jest', '@testing-library/jest-dom', 'node']
       }
     }]
   },
