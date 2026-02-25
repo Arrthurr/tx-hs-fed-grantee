@@ -15,8 +15,8 @@ jest.mock('@vis.gl/react-google-maps', () => ({
   Map: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="google-map">{children}</div>
   ),
-  AdvancedMarker: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="advanced-marker">{children}</div>
+  AdvancedMarker: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
+    <div data-testid="advanced-marker" onClick={onClick}>{children}</div>
   ),
   Pin: () => <div data-testid="map-pin" />,
   InfoWindow: ({ children, onCloseClick }: { children: React.ReactNode; onCloseClick?: () => void }) => (
@@ -239,7 +239,7 @@ describe('TexasMap Component', () => {
     render(<TexasMapWithProvider />);
     
     // Check if loading spinner is displayed
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
   test('displays error state when there are errors', () => {
@@ -253,7 +253,7 @@ describe('TexasMap Component', () => {
     render(<TexasMapWithProvider />);
     
     // Check if error display is shown
-    expect(screen.getByTestId('error-display')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
   });
 
   test('calls toggleLayer when layer controls are used', () => {
@@ -269,6 +269,6 @@ describe('TexasMap Component', () => {
     const headStartToggle = screen.getByTitle('Toggle Head Start Programs');
     fireEvent.click(headStartToggle);
     
-    expect(toggleLayerMock).toHaveBeenCalledWith('programs');
+    expect(toggleLayerMock).toHaveBeenCalledWith('headStartPrograms');
   });
 });
