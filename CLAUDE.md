@@ -293,12 +293,6 @@ GeoJSON polygon files for each district:
 
 ## Known Issues and Gotchas
 
-### Google Maps API
-- **Issue**: "RefNotForwarded" warnings in console
-  - **Cause**: @vis.gl/react-google-maps library implementation
-  - **Impact**: None - purely cosmetic warning
-  - **Status**: Upstream library issue
-
 ### Congressional Districts
 - **Issue**: Districts TX-37 and TX-38 files exist but shouldn't
   - **Cause**: Historical numbering or placeholder data
