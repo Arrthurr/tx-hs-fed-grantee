@@ -60,6 +60,15 @@
   --district-secondary: #6d28d9;
   --district-accent: #ede9fe;
 
+  /* TXHSA Regions - four perceptually distinct hues, each passing WCAG-AA
+     against white. Distinct from --headstart-primary (green) so Head Start
+     markers remain visually separable when both layers are visible. */
+  --txhsa-west: #d97706;   /* amber-600  */
+  --txhsa-north: #1d4ed8;  /* blue-700   */
+  --txhsa-east: #7c3aed;   /* violet-600 */
+  --txhsa-south: #dc2626;  /* red-600    */
+  --txhsa-accent: #334155; /* slate-700 - neutral, used by the toggle UI */
+
   /* Map-specific colors */
   --map-background: #f8fafc;
   --map-water: #e0f2fe;
