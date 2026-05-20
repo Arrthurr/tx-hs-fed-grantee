@@ -10,12 +10,10 @@ const DebugEnv: React.FC = () => {
     // Check environment variables
     const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
     const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID;
-    const congressKey = import.meta.env.VITE_CONGRESS_API_KEY;
-    
+
     results.push(`✅ NODE_ENV: ${import.meta.env.MODE}`);
     results.push(`${apiKey ? '✅' : '❌'} VITE_GOOGLE_MAPS_API_KEY: ${apiKey ? `${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}` : 'NOT FOUND'}`);
     results.push(`${mapId ? '✅' : '❌'} VITE_GOOGLE_MAPS_MAP_ID: ${mapId || 'NOT FOUND'}`);
-    results.push(`${congressKey ? '✅' : '❌'} VITE_CONGRESS_API_KEY: ${congressKey ? `${congressKey.substring(0, 10)}...` : 'NOT FOUND'}`);
     
     setCheckResults(results);
     

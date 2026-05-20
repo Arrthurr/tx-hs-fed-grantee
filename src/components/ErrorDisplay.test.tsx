@@ -183,17 +183,6 @@ describe('ErrorDisplay Component', () => {
     expect(screen.getByText(/Check your internet connection/)).toBeInTheDocument();
   });
 
-  test('includes Congress.gov API setup in API error instructions', () => {
-    render(
-      <ErrorDisplay 
-        {...mockProps}
-        errorType="api"
-      />
-    );
-    
-    expect(screen.getByText('Congress.gov API (Optional):')).toBeInTheDocument();
-  });
-
   test('renders with proper card styling', () => {
     const { container } = render(<ErrorDisplay {...mockProps} />);
     

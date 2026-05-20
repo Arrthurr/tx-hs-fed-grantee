@@ -12,18 +12,12 @@ Object.defineProperty(process.env, 'VITE_GOOGLE_MAPS_MAP_ID', {
   writable: true,
 });
 
-Object.defineProperty(process.env, 'VITE_CONGRESS_API_KEY', {
-  value: 'test-congress-api-key',
-  writable: true,
-});
-
 // Mock import.meta.env for Vite compatibility in Jest
 Object.defineProperty(global, 'importMeta', {
   value: {
     env: {
       VITE_GOOGLE_MAPS_API_KEY: 'test-api-key',
       VITE_GOOGLE_MAPS_MAP_ID: 'test-map-id',
-      VITE_CONGRESS_API_KEY: 'test-congress-api-key',
     }
   },
   writable: true,
@@ -35,7 +29,6 @@ Object.defineProperty(global, 'importMeta', {
     env: {
       VITE_GOOGLE_MAPS_API_KEY: 'test-api-key',
       VITE_GOOGLE_MAPS_MAP_ID: 'test-map-id',
-      VITE_CONGRESS_API_KEY: 'test-congress-api-key',
     }
   }
 };
@@ -222,236 +215,6 @@ jest.mock('./utils/mapHelpers', () => ({
     
     return { lat, lng };
   }
-}));
-
-// Mock data processing functions
-jest.mock('./data/congressionalDistricts', () => ({
-  processCongressionalDistricts: (rawData: any[]) => {
-    return rawData
-      .map((district) => ({
-        type: 'Feature' as const,
-        properties: {
-          district: district.properties.district,
-          name: district.properties.name,
-          representative: district.properties.representative,
-          districtNumber: district.properties.districtNumber,
-          state: district.properties.state
-        },
-        geometry: district.geometry
-      }))
-      .filter((district: any) => 
-        district.properties.district && 
-        district.properties.name && 
-        district.properties.representative &&
-        district.properties.state === 'TX'
-      );
-  },
-  validateCongressionalDistrict: (district: any) => {
-    if (!district.properties?.district || !district.properties?.name || !district.properties?.representative) {
-      return false;
-    }
-    if (typeof district.properties.districtNumber !== 'number' || district.properties.districtNumber < 1) {
-      return false;
-    }
-    if (district.properties.state !== 'TX') {
-      return false;
-    }
-    if (!district.geometry?.coordinates) {
-      return false;
-    }
-    return true;
-  },
-  filterCongressionalDistricts: (districts: any[], searchTerm: string) => {
-    if (!searchTerm.trim()) return districts;
-    
-    const term = searchTerm.toLowerCase().trim();
-    return districts.filter((district: any) => 
-      district.properties.name.toLowerCase().includes(term) ||
-      district.properties.representative.toLowerCase().includes(term) ||
-      district.properties.district.toLowerCase().includes(term) ||
-      district.properties.districtNumber.toString().includes(term)
-    );
-  },
-  sortCongressionalDistrictsByNumber: (districts: any[]) => {
-    return [...districts].sort((a: any, b: any) => a.properties.districtNumber - b.properties.districtNumber);
-  },
-  sortCongressionalDistrictsByRepresentative: (districts: any[]) => {
-    return [...districts].sort((a: any, b: any) => 
-      a.properties.representative.localeCompare(b.properties.representative)
-    );
-  },
-  getCongressionalDistrictByNumber: (districts: any[], districtNumber: number) => {
-    return districts.find((district: any) => district.properties.districtNumber === districtNumber);
-  },
-  getCongressionalDistrictByRepresentative: (districts: any[], representativeName: string) => {
-    return districts.find((district: any) => 
-      district.properties.representative.toLowerCase() === representativeName.toLowerCase()
-    );
-  },
-  getCongressionalDistrictAtPoint: (districts: any[], lat: number, lng: number) => {
-    // Find the first district that contains the point
-    return districts.find((district: any) => {
-      // Use isPointInPolygon to check if point is in this district
-      if (!district.geometry || !district.geometry.coordinates) return false;
-      
-      if (district.geometry.type === 'Polygon') {
-        const coordinates = district.geometry.coordinates as number[][][];
-        if (coordinates.length === 0) return false;
-        
-        const polygon = coordinates[0]; // Outer ring
-        let inside = false;
-        
-        for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-          const xi = polygon[i][0], yi = polygon[i][1]; // [lng, lat]
-          const xj = polygon[j][0], yj = polygon[j][1]; // [lng, lat]
-          
-          const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
-          if (intersect) inside = !inside;
-        }
-        return inside;
-      } else if (district.geometry.type === 'MultiPolygon') {
-        const coordinates = district.geometry.coordinates as number[][][][];
-        return coordinates.some(polygon => {
-          if (!polygon || polygon.length === 0) return false;
-          
-          const ring = polygon[0];
-          let inside = false;
-          
-          for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-            const xi = ring[i][0], yi = ring[i][1]; // [lng, lat]
-            const xj = ring[j][0], yj = ring[j][1]; // [lng, lat]
-            
-            const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
-          }
-          return inside;
-        });
-      }
-      return false;
-    });
-  },
-  isPointInPolygon: (lat: number, lng: number, geometry: any) => {
-    // Ray casting algorithm for point-in-polygon check
-    if (!geometry || !geometry.coordinates) return false;
-    
-    if (geometry.type === 'Polygon') {
-      const coordinates = geometry.coordinates as number[][][];
-      if (coordinates.length === 0) return false;
-      
-      const polygon = coordinates[0]; // Outer ring
-      let inside = false;
-      
-      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-        const xi = polygon[i][0], yi = polygon[i][1]; // [lng, lat]
-        const xj = polygon[j][0], yj = polygon[j][1]; // [lng, lat]
-        
-        const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
-        if (intersect) inside = !inside;
-      }
-      return inside;
-    } else if (geometry.type === 'MultiPolygon') {
-      const coordinates = geometry.coordinates as number[][][][];
-      return coordinates.some(polygon => {
-        let inside = false;
-        const ring = polygon[0];
-        
-        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-          const xi = ring[i][0], yi = ring[i][1]; // [lng, lat]
-          const xj = ring[j][0], yj = ring[j][1]; // [lng, lat]
-          
-          const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
-          if (intersect) inside = !inside;
-        }
-        return inside;
-      });
-    }
-    return false;
-  },
-  isPointInSinglePolygon: (lat: number, lng: number, coordinates: any) => {
-    // Ray casting algorithm for point-in-polygon check (GeoJSON format: [lng, lat])
-    if (!coordinates || coordinates.length === 0) return false;
-    
-    const polygon = coordinates[0]; // Outer ring
-    let inside = false;
-    
-    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-      const xi = polygon[i][0], yi = polygon[i][1]; // [lng, lat]
-      const xj = polygon[j][0], yj = polygon[j][1]; // [lng, lat]
-      
-      // Check if point latitude is within the edge latitude range and crosses the vertical line at lng
-      const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
-      if (intersect) inside = !inside;
-    }
-    return inside;
-  },
-  isPointInMultiPolygon: (lat: number, lng: number, coordinates: any) => {
-    // Ray casting algorithm for MultiPolygon
-    if (!coordinates || coordinates.length === 0) return false;
-    
-    return coordinates.some((polygon: number[][][]) => {
-      if (!polygon || polygon.length === 0) return false;
-      
-      const ring = polygon[0];
-      let inside = false;
-      
-      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-        const xi = ring[i][0], yi = ring[i][1]; // [lng, lat]
-        const xj = ring[j][0], yj = ring[j][1]; // [lng, lat]
-        
-        const intersect = ((yi > lat) !== (yj > lat)) && (lng < ((xj - xi) * (lat - yi)) / (yj - yi) + xi);
-        if (intersect) inside = !inside;
-      }
-      return inside;
-    });
-  },
-  getCongressionalDistrictStats: (districts: any[]) => {
-    if (districts.length === 0) {
-      return {
-        total: 0,
-        districtNumbers: [],
-        representatives: [],
-        minDistrictNumber: 0,
-        maxDistrictNumber: 0
-      };
-    }
-    
-    const districtNumbers = districts.map((d: any) => d.properties.districtNumber).sort((a: any, b: any) => a - b);
-    const representatives = districts.map((d: any) => d.properties.representative).sort();
-    
-    return {
-      total: districts.length,
-      districtNumbers,
-      representatives,
-      minDistrictNumber: Math.min(...districtNumbers),
-      maxDistrictNumber: Math.max(...districtNumbers)
-    };
-  },
-  formatDistrictNumber: (districtNumber: number) => {
-    const getOrdinalSuffix = (num: number) => {
-      const j = num % 10;
-      const k = num % 100;
-      if (j === 1 && k !== 11) return 'st';
-      if (j === 2 && k !== 12) return 'nd';
-      if (j === 3 && k !== 13) return 'rd';
-      return 'th';
-    };
-    return `${districtNumber}${getOrdinalSuffix(districtNumber)}`;
-  },
-  getOrdinalSuffix: (num: number) => {
-    const j = num % 10;
-    const k = num % 100;
-    if (j === 1 && k !== 11) return 'st';
-    if (j === 2 && k !== 12) return 'nd';
-    if (j === 3 && k !== 13) return 'rd';
-    return 'th';
-  },
-  createDistrictFeatureCollection: (districts: any[]) => {
-    return {
-      type: 'FeatureCollection',
-      features: districts
-    };
-  },
-  RawCongressionalDistrict: {} // Export the type for imports
 }));
 
 // Mock data validation functions

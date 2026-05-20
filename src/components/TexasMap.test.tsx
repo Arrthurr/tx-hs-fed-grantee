@@ -58,48 +58,6 @@ const mockHeadStartPrograms = [
   },
 ];
 
-const mockCongressionalDistricts = [
-  {
-    number: 1,
-    representative: 'Representative 1',
-    population: 750000,
-    center: { lat: 30.5, lng: -96.5 },
-    headStartPrograms: [],
-    party: 'Republican',
-  },
-  {
-    number: 2,
-    representative: 'Representative 2',
-    population: 750000,
-    center: { lat: 29.5, lng: -95.5 },
-    headStartPrograms: [],
-    party: 'Democrat',
-  },
-];
-
-const mockRawDistrictFeatures = [
-  {
-    type: 'Feature' as const,
-    properties: {
-      district: 'TX-1',
-      name: 'Texas 1st Congressional District',
-      representative: 'Representative 1',
-      districtNumber: 1,
-      state: 'TX',
-    },
-    geometry: {
-      type: 'Polygon' as const,
-      coordinates: [[
-        [-97.0, 30.0],
-        [-97.0, 31.0],
-        [-96.0, 31.0],
-        [-96.0, 30.0],
-        [-97.0, 30.0],
-      ]],
-    },
-  },
-];
-
 // Default mock implementations
 const mockUseMapData = useMapData as jest.MockedFunction<typeof useMapData>;
 
@@ -125,15 +83,11 @@ describe('TexasMap Component', () => {
     // Setup default mock implementations
     mockUseMapData.mockReturnValue({
       programs: mockHeadStartPrograms,
-      districts: mockCongressionalDistricts,
       headStartPrograms: mockHeadStartPrograms,
-      congressionalDistricts: mockCongressionalDistricts,
-      rawDistrictFeatures: mockRawDistrictFeatures,
       txhsaRegions: [],
       regionProgramCounts: null,
       layerVisibility: {
         majorCities: false,
-        districtBoundaries: false,
         counties: false,
         headStartPrograms: true,
         txhsaRegions: false,
@@ -142,18 +96,12 @@ describe('TexasMap Component', () => {
       setLayerVisibilityState: jest.fn(),
       isLoading: false,
       isLoadingPrograms: false,
-      isLoadingDistricts: false,
-      isLoadingCongressData: false,
       isLoadingRegions: false,
       hasErrors: false,
       programsError: null,
-      districtsError: null,
-      congressDataError: null,
       regionsError: null,
       retryLoading: jest.fn(),
       loadHeadStartPrograms: jest.fn(),
-      loadCongressionalDistricts: jest.fn(),
-      loadCongressionalData: jest.fn(),
       loadTxhsaRegions: jest.fn(),
     } as any);
     (global as any).__resetMapDataInstances?.();
@@ -193,7 +141,6 @@ describe('TexasMap Component', () => {
       ...mockUseMapData(),
       layerVisibility: {
         majorCities: false,
-        districtBoundaries: false,
         counties: false,
         headStartPrograms: false,
         txhsaRegions: false,
@@ -305,7 +252,6 @@ describe('TexasMap Component', () => {
         regionProgramCounts: { West: 1, North: 2, East: 3, South: 0 },
         layerVisibility: {
           majorCities: false,
-          districtBoundaries: false,
           counties: false,
           headStartPrograms: true,
           txhsaRegions: true,
@@ -327,7 +273,6 @@ describe('TexasMap Component', () => {
         regionProgramCounts: { West: 0, North: 2, East: 1, South: 7 },
         layerVisibility: {
           majorCities: false,
-          districtBoundaries: false,
           counties: false,
           headStartPrograms: true,
           txhsaRegions: true,
@@ -364,7 +309,6 @@ describe('TexasMap Component', () => {
         regionProgramCounts: { West: 1, North: 0, East: 0, South: 0 },
         layerVisibility: {
           majorCities: false,
-          districtBoundaries: false,
           counties: false,
           headStartPrograms: true,
           txhsaRegions: true,
@@ -388,7 +332,6 @@ describe('TexasMap Component', () => {
         regionProgramCounts: null,
         layerVisibility: {
           majorCities: false,
-          districtBoundaries: false,
           counties: false,
           headStartPrograms: true,
           txhsaRegions: true,
