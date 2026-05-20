@@ -65,10 +65,3 @@ export function getGoogleMapsApiKey(): string {
 export function getGoogleMapsMapId(): string | undefined {
   return getEnvVar('VITE_GOOGLE_MAPS_MAP_ID');
 }
-
-/**
- * Get Congress API key (optional)
- */
-export function getCongressApiKey(): string | undefined {
-  return getEnvVar('VITE_CONGRESS_API_KEY');
-}

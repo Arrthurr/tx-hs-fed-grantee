@@ -55,12 +55,12 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
         
         {/* Progress indicator */}
         <div className="w-48 h-2 bg-tx-gray-200 rounded-full overflow-hidden" aria-hidden="true">
-          <div className="h-full bg-gradient-to-r from-headstart-primary to-district-primary rounded-full animate-pulse" />
+          <div className="h-full bg-gradient-to-r from-headstart-primary to-txhsa-accent rounded-full animate-pulse" />
         </div>
-        
+
         {/* Additional context */}
         <p className="text-xs text-tx-gray-500 text-center max-w-xs">
-          Loading Head Start programs and congressional districts across Texas
+          Loading Head Start programs and TXHSA regions across Texas
         </p>
       </div>
     </div>

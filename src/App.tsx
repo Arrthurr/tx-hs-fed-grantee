@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { APIProvider } from '@vis.gl/react-google-maps';
-import { Building2, Users } from 'lucide-react';
+import { Building2, MapIcon } from 'lucide-react';
 import TexasMap from './components/TexasMap';
 import LoadingSpinner from './components/LoadingSpinner';
 import ErrorDisplay from './components/ErrorDisplay';
-import { useMapData } from './hooks/useMapData';
+import { MapDataProvider, useMapData } from './hooks/useMapData';
 
 /**
- * Main application component for the Texas Head Start Interactive Map
- * Handles Google Maps API loading and provides the main user interface
+ * Inner application body. Must be rendered inside <MapDataProvider> so
+ * useMapData() resolves the shared instance instead of creating a second
+ * (duplicate) one. The thin <App /> wrapper at the bottom of this file owns
+ * the provider.
  */
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   // Get Google Maps API key and Map ID from environment variables
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const mapId = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID';
@@ -21,8 +23,10 @@ const App: React.FC = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [mapsReady, setMapsReady] = useState(false);
 
-  // Get map data and check for data loading errors
-  const { hasErrors, programsError, districtsError, congressDataError, retryLoading } = useMapData();
+  // Get map data and check for data loading errors. Only programsError is
+  // treated as a blocking failure here -- a regions-only failure is reported
+  // by TexasMap via an inline path and does not gate the API provider.
+  const { programsError, regionsError, retryLoading } = useMapData();
 
   /**
    * Check if Google Maps API constructors are available and callable
@@ -195,17 +199,16 @@ const App: React.FC = () => {
       );
     }
     
-    // Handle data loading errors
-    if (hasErrors) {
-      const errorMessages = [];
-      if (programsError) errorMessages.push(`Programs: ${programsError}`);
-      if (districtsError) errorMessages.push(`Districts: ${districtsError}`);
-      if (congressDataError) errorMessages.push(`Congress Data: ${congressDataError}`);
-      
-      const errorMessage = errorMessages.length > 0 ? errorMessages.join('\n\n') : 'Failed to load map data';
-      
+    // Handle blocking data loading errors -- programs failures only. Regions
+    // failures are reported by TexasMap so the user can still interact with
+    // the program markers when only the overlay layer is broken.
+    if (programsError) {
+      const errorMessage = regionsError
+        ? `Programs: ${programsError}\n\nTXHSA Regions: ${regionsError}`
+        : `Programs: ${programsError}`;
+
       return (
-        <ErrorDisplay 
+        <ErrorDisplay
           error={errorMessage}
           onRetry={retryLoading}
           errorType="data"
@@ -266,7 +269,7 @@ const App: React.FC = () => {
                     </span> */}
                   </h1>
                   <p className="text-sm text-tx-gray-600 mt-1">
-                    Explore Head Start and Early Head Start program funding and congressional districts across Texas
+                    Explore Head Start and Early Head Start program funding and TXHSA regions across Texas
                   </p>
                 </div>
               </div>
@@ -283,10 +286,10 @@ const App: React.FC = () => {
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center space-x-2">
-                      <Users className="w-5 h-5 text-district-primary" aria-hidden="true" />
-                      <span className="text-xl font-bold text-tx-gray-900">36</span>
+                      <MapIcon className="w-5 h-5 text-txhsa-accent" aria-hidden="true" />
+                      <span className="text-xl font-bold text-tx-gray-900">4</span>
                     </div>
-                    <p className="text-xs text-tx-gray-600">Congressional Districts</p>
+                    <p className="text-xs text-tx-gray-600">TXHSA Regions</p>
                   </div>
                 </div>
               </div>
@@ -311,7 +314,7 @@ const App: React.FC = () => {
                   Federal Grantee Head Start Programs
                 </h2>
                 <p className="text-tx-blue-100 text-sm leading-relaxed">
-                  Click on program markers to view details. Toggle layers to explore Head Start programs and congressional districts.
+                  Click on program markers to view details. Toggle layers to explore Head Start programs and TXHSA regions.
                 </p>
               </div>
             </div>
@@ -340,5 +343,16 @@ const App: React.FC = () => {
       </div>
   );
 };
+
+/**
+ * Top-level App: owns the MapDataProvider so AppContent and TexasMap share
+ * a single useMapData instance (one fetch chain, one retry loop, one error
+ * surface for the whole tree).
+ */
+const App: React.FC = () => (
+  <MapDataProvider>
+    <AppContent />
+  </MapDataProvider>
+);
 
 export default App;

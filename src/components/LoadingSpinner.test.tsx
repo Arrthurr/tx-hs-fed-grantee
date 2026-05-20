@@ -44,8 +44,8 @@ describe('LoadingSpinner Component', () => {
     expect(container.textContent).toContain('Head Start');
   });
 
-  test('has congressional districts related content', () => {
+  test('has TXHSA regions related content', () => {
     const { container } = render(<LoadingSpinner />);
-    expect(container.textContent).toContain('congressional districts');
+    expect(container.textContent).toContain('TXHSA regions');
   });
 });

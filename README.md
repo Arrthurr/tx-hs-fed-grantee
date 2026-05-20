@@ -1,18 +1,17 @@
 # Texas Head Start Interactive Map
 
-An interactive map application that visualizes Head Start and Early Head Start Federal Grantee Programs across Texas, along with congressional district boundaries. This tool helps policymakers and state officials analyze program distribution and political representation.
+An interactive map application that visualizes Head Start and Early Head Start Federal Grantee Programs across Texas, along with TXHSA regions. This tool helps policymakers and state officials analyze program distribution.
 
 ## 🌟 Features
 
 - **Interactive Google Maps Integration**: Smooth, responsive map of Texas with custom styling
 - **Head Start Program Markers**: View all Head Start and Early Head Start program locations across Texas
-- **Congressional District Boundaries**: Toggle district boundaries with semi-transparent, color-coded overlays
-- **Congressional Representative Data**: Real-time representative information from Congress.gov API
-- **Detailed Information Popups**: Click on any marker or district to view comprehensive details
+- **TXHSA Regions Overlay**: Toggle the four TXHSA regions (West / North / East / South), built by dissolving TDEM-8 disaster regions from Texas counties
+- **Per-region program counts**: Click a region to see how many Head Start / Early Head Start programs fall inside it
+- **Detailed Information Popups**: Click on any program marker to view comprehensive details
 - **Layer Controls**: Easily toggle between different data layers
 - **Responsive Design**: Optimized for desktop and tablet devices
-- **Search Functionality**: Find specific programs or districts by name, address, or representative
-- **Performance Optimized**: Efficiently handles 80+ program locations and 36 congressional districts
+- **Performance Optimized**: Efficiently handles 80+ program locations and the four region polygons
 - **Accessibility Compliant**: Built with WCAG guidelines in mind
 
 ## 🚀 Getting Started
@@ -21,7 +20,6 @@ An interactive map application that visualizes Head Start and Early Head Start F
 
 - Node.js 16+ and npm
 - Google Maps API key with Maps JavaScript API enabled
-- Congress.gov API key (optional, for enhanced congressional data)
 
 ### Installation
 
@@ -37,12 +35,7 @@ An interactive map application that visualizes Head Start and Early Head Start F
    - Create an API key and restrict it to your domain (for production)
    - Optionally create a Map ID for custom styling
 
-3. **Set up Congress.gov API** (optional):
-   - Visit [Congress.gov API](https://api.congress.gov/)
-   - Sign up for an API key
-   - This enables enhanced congressional representative data
-
-4. **Configure environment variables**:
+3. **Configure environment variables**:
    ```bash
    cp .env.example .env.local
    ```
@@ -50,15 +43,14 @@ An interactive map application that visualizes Head Start and Early Head Start F
    ```env
    VITE_GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key_here
    VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
-   VITE_CONGRESS_API_KEY=your_congress_api_key_here
    ```
 
-5. **Start development server**:
+4. **Start development server**:
    ```bash
    npm run dev
    ```
 
-6. **Build for production**:
+5. **Build for production**:
    ```bash
    npm run build
    ```
@@ -78,11 +70,6 @@ VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 # Get your Map ID from: https://console.cloud.google.com/google/maps-apis/
 # Used for custom map styling
 VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
-
-# Congress.gov API Key (Optional)
-# Get your key from: https://api.congress.gov/
-# Enables enhanced congressional representative data
-VITE_CONGRESS_API_KEY=your_congress_api_key_here
 ```
 
 ### API Key Setup Instructions
@@ -94,16 +81,6 @@ VITE_CONGRESS_API_KEY=your_congress_api_key_here
 4. Create credentials (API key)
 5. Restrict the API key to your domain for security
 6. Optionally create a Map ID for custom styling
-
-#### Congress.gov API
-1. Visit [Congress.gov API](https://api.congress.gov/)
-2. Sign up for an account
-3. Request an API key
-4. The API key enables enhanced congressional data including:
-   - Representative photos
-   - Contact information
-   - Committee assignments
-   - Party affiliations
 
 ## 🏗️ Project Structure
 
@@ -119,11 +96,13 @@ src/
 │   ├── useMapData.ts    # Data management hook
 │   └── useSearch.ts     # Search functionality hook
 ├── data/
-│   ├── headStartPrograms.ts      # Program data processing
-│   └── congressionalDistricts.ts # District data processing
+│   ├── headStartPrograms.ts # Program data processing
+│   ├── txhsaRegions.ts      # Region validation + processing
+│   └── tdemCountyRegions.ts # TDEM county → region lookup
 ├── types/
 │   └── maps.ts          # TypeScript type definitions
 ├── utils/
+│   ├── geometry.ts      # Point-in-polygon helpers
 │   └── mapHelpers.ts    # Map utility functions
 ├── styles/
 │   └── design-system.css # Custom design system
@@ -132,16 +111,21 @@ src/
 
 ## 📊 Data Sources
 
-The application uses GeoJSON data for both Head Start programs and congressional districts:
-
 - **Head Start Programs**: Location data for all Head Start and Early Head Start federal grantee programs in Texas
-- **Congressional Districts**: Boundary data for all 36 Texas congressional districts
+- **TXHSA Regions**: Four polygons (West / North / East / South) built at repo-build time by dissolving Texas counties grouped by their TDEM region (https://tdem.texas.gov/regions). The dissolve script lives at `scripts/build-txhsa-regions.ts`; the committed lookup at `src/data/tdemCountyRegions.ts` maps each county to its TDEM region.
+
+To regenerate the region geojson after updating the lookup or the county source:
+
+```bash
+npm run build:regions
+```
 
 ## 🎨 Design Features
 
 - **Texas-Themed Color Palette**: Professional blue and orange color scheme
+- **Distinct Region Hues**: Amber, blue, violet, and red - each WCAG-AA compliant against the basemap
 - **Intuitive Layer Controls**: Easy-to-use toggles for different data layers
-- **Informative Popups**: Well-designed information windows with comprehensive details
+- **Informative Popups**: Well-designed information windows
 - **Responsive Layout**: Adapts to different screen sizes
 - **Accessible Design**: High-contrast colors and keyboard navigation support
 
@@ -154,6 +138,7 @@ The application uses GeoJSON data for both Head Start programs and congressional
 - **Tailwind CSS**: Utility-first CSS framework
 - **Vite**: Fast, modern build tool
 - **Lucide React**: Beautiful, customizable icons
+- **@turf/union**: Topology-aware geometry dissolve (build-time only)
 
 ## 🧪 Testing
 
@@ -181,28 +166,22 @@ npm run test:e2e
   - Grantee organization
   - Annual funding amount (when available)
 
-### Congressional Districts Layer
+### TXHSA Regions Layer
 
-- Shows all 36 Texas congressional districts with color-coded boundaries
-- Provides information on each district including:
-  - District number
-  - Representative name
-  - Party affiliation
-  - Population data
-  - Contact information
+- Shows the four TXHSA regions (West / North / East / South) as a single dissolved polygon per region
+- Click a region to see its name and the count of Head Start / Early Head Start programs that fall inside it
+- Counts are computed lazily via point-in-polygon and memoized once both datasets are loaded
 
 ### Layer Controls
 
 - Toggle Head Start Programs visibility
-- Toggle Congressional Districts visibility
-- Toggle District Boundaries visibility
+- Toggle TXHSA Regions visibility
 - Clear visual indicators of current layer state
 
 ### Search Functionality
 
 - Search for programs by name, address, or grantee
-- Search for districts by number or representative name
-- Results display with count and category breakdown
+- Results display with count
 - Map automatically centers on selected search result
 
 ## 📱 Browser Support

@@ -104,6 +104,13 @@ export default {
           secondary: 'var(--district-secondary)',
           accent: 'var(--district-accent)',
         },
+        txhsa: {
+          west: 'var(--txhsa-west)',
+          north: 'var(--txhsa-north)',
+          east: 'var(--txhsa-east)',
+          south: 'var(--txhsa-south)',
+          accent: 'var(--txhsa-accent)',
+        },
         // Map colors
         map: {
           background: 'var(--map-background)',

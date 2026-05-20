@@ -2,13 +2,13 @@
 
 ## Project Overview
 
-An interactive map application that visualizes Head Start and Early Head Start Federal Grantee Programs across Texas, overlaid with congressional district boundaries. This tool helps policymakers and state officials analyze program distribution and political representation through an intuitive Google Maps interface.
+An interactive map application that visualizes Head Start and Early Head Start Federal Grantee Programs across Texas, overlaid with TXHSA regions. This tool helps policymakers and state officials analyze program distribution through an intuitive Google Maps interface.
 
 **Key Features:**
 - Interactive Texas map with 80+ Head Start program locations
-- Congressional district boundaries (36 districts) with representative data
-- Real-time Congress.gov API integration for representative information
-- Search functionality for programs and districts
+- TXHSA Regions overlay - four polygons (West / North / East / South) built by dissolving Texas counties grouped by their TDEM disaster region
+- Per-region program count surfaced via a region info window
+- Search functionality for programs
 - Layer controls for toggling data visibility
 - Responsive design optimized for desktop and tablet
 - Comprehensive accessibility features
@@ -22,18 +22,20 @@ An interactive map application that visualizes Head Start and Early Head Start F
 - **Icons**: Lucide React
 - **Testing**: Jest (unit tests) + Playwright (E2E tests)
 - **Linting**: ESLint with TypeScript plugin
-- **APIs**: Google Maps API, Congress.gov API (optional)
+- **APIs**: Google Maps API
+- **Build-time tools**: `@turf/union` (dissolve), `tsx` (run TS scripts)
 
 ## Quick Start Commands
 
 ```bash
-npm run dev          # Start development server at http://localhost:5173
-npm run build        # Build for production (outputs to dist/)
-npm run preview      # Preview production build locally
-npm run lint         # Run ESLint checks
-npm test             # Run all Jest unit tests
-npm run test:e2e     # Run Playwright E2E tests
-npm run test:e2e:ui  # Run Playwright tests with UI
+npm run dev            # Start development server at http://localhost:5173
+npm run build          # Build for production (outputs to dist/)
+npm run build:regions  # Regenerate the four TXHSA region geojson files
+npm run preview        # Preview production build locally
+npm run lint           # Run ESLint checks
+npm test               # Run all Jest unit tests
+npm run test:e2e       # Run Playwright E2E tests
+npm run test:e2e:ui    # Run Playwright tests with UI
 ```
 
 ## Environment Configuration
@@ -43,13 +45,11 @@ npm run test:e2e:ui  # Run Playwright tests with UI
 
 **Optional:**
 - `VITE_GOOGLE_MAPS_MAP_ID` - Custom Map ID for styled maps
-- `VITE_CONGRESS_API_KEY` - Congress.gov API key for enhanced representative data
 
 Create a `.env.local` file (never commit this):
 ```env
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
-VITE_CONGRESS_API_KEY=your_congress_api_key_here
 ```
 
 ## Project Structure
@@ -64,30 +64,31 @@ src/
 │   ├── LoadingSpinner.tsx # Loading state indicator
 │   ├── ErrorDisplay.tsx  # Error boundary and display
 │   ├── ResponsiveWrapper.tsx # Responsive layout wrapper
-│   ├── AccessibilityChecker.tsx # Accessibility validation
-│   └── CongressDataDebug.tsx # Debug component for API testing
+│   └── AccessibilityChecker.tsx # Accessibility validation
 │
 ├── hooks/
-│   ├── useMapData.ts    # Map data management, layer visibility, geolocation
-│   └── useSearch.ts     # Search logic for programs and districts
+│   ├── useMapData.ts    # Map data management, layer visibility, region counts
+│   └── useSearch.ts     # Search logic for programs
 │
 ├── data/
-│   ├── headStartPrograms.ts      # Head Start program data and processing
-│   ├── congressionalDistricts.ts # Congressional district data and processing
-│   └── texasLocations.ts         # Texas geographic data
-│
-├── api/
-│   └── congress.ts      # Congress.gov API client with retry logic
+│   ├── headStartPrograms.ts # Head Start program data and processing
+│   ├── txhsaRegions.ts      # TXHSA region validation + processing
+│   ├── tdemCountyRegions.ts # County → TDEM region lookup (build-time input)
+│   └── texasLocations.ts    # Texas geographic data
 │
 ├── utils/
-│   ├── mapHelpers.ts    # Map utility functions (bounds, colors, formatting)
+│   ├── geometry.ts      # Generic point-in-polygon helpers
+│   ├── mapHelpers.ts    # Map utility functions
 │   └── envValidator.ts  # Environment variable validation
 │
 ├── types/
-│   └── maps.ts          # TypeScript type definitions for map entities
+│   └── maps.ts          # TypeScript type definitions
 │
 ├── App.tsx              # Main application component
 └── main.tsx             # Application entry point
+
+scripts/
+└── build-txhsa-regions.ts # One-time dissolve script (`npm run build:regions`)
 ```
 
 ## Code Patterns and Conventions
@@ -119,7 +120,6 @@ const ComponentName: React.FC<ComponentNameProps> = ({
     // handler logic
   }, [dependencies]);
 
-  // Render
   return (
     <div className="tailwind-classes">
       {/* content */}
@@ -130,25 +130,6 @@ const ComponentName: React.FC<ComponentNameProps> = ({
 export default ComponentName;
 ```
 
-### Import Order
-1. React imports
-2. Third-party libraries
-3. Local components
-4. Hooks
-5. Types/interfaces
-6. Utils/helpers
-7. Styles
-
-Example:
-```typescript
-import React, { useState, useCallback } from 'react';
-import { Map, Marker } from '@vis.gl/react-google-maps';
-import SearchBar from './components/SearchBar';
-import { useMapData } from './hooks/useMapData';
-import type { HeadStartProgram } from './types/maps';
-import { calculateBounds } from './utils/mapHelpers';
-```
-
 ### State Management
 - Use `null` for nullable types (not `undefined`)
 - Initialize objects with proper defaults
@@ -156,8 +137,7 @@ import { calculateBounds } from './utils/mapHelpers';
 - Prefer `useCallback` for event handlers passed to child components
 
 ### Error Handling
-- API calls use retry logic with exponential backoff (see `src/api/congress.ts`)
-- Errors are classified by type (network, validation, API error)
+- API calls report errors via React state (e.g., `programsError`, `regionsError`)
 - User-friendly error messages via `ErrorDisplay` component
 - Graceful fallbacks for missing/optional data
 
@@ -166,6 +146,7 @@ import { calculateBounds } from './utils/mapHelpers';
 - Custom prefixes for component-specific classes: `btn-`, `card-`, `marker-`
 - Conditional classes using template literals or `clsx`
 - Responsive breakpoints: `sm:`, `md:`, `lg:`, `xl:`
+- TXHSA region tokens: `--txhsa-west`, `--txhsa-north`, `--txhsa-east`, `--txhsa-south`, `--txhsa-accent`
 
 ### Accessibility
 - All interactive elements have ARIA labels
@@ -179,8 +160,7 @@ import { calculateBounds } from './utils/mapHelpers';
 ### Unit Tests (Jest)
 - Component tests in `*.test.tsx` files alongside components
 - Test user interactions with @testing-library/react
-- Mock external dependencies (Google Maps, APIs)
-- Aim for 98%+ code coverage
+- Mock external dependencies (Google Maps, network)
 
 **Running Tests:**
 ```bash
@@ -194,7 +174,6 @@ npm test -- --coverage                        # With coverage report
 - Test critical user flows (search, layer toggles, map interactions)
 - Run against built application
 
-**Running E2E Tests:**
 ```bash
 npm run test:e2e        # Headless mode
 npm run test:e2e:ui     # Interactive UI mode
@@ -206,8 +185,8 @@ npm run test:e2e:ui     # Interactive UI mode
 Main map component using @vis.gl/react-google-maps.
 - Renders Google Maps with custom Texas-centered view
 - Handles marker rendering for Head Start programs
-- Manages polygon overlays for congressional districts
-- Implements click handlers for markers and districts
+- Manages TXHSA region polygon overlays (`google.maps.Data` per region)
+- Renders a minimal region info window: region name + program count
 - Controls map center and zoom level
 
 **Important:** Requires `VITE_GOOGLE_MAPS_API_KEY` in environment.
@@ -215,49 +194,38 @@ Main map component using @vis.gl/react-google-maps.
 ### useMapData Hook (src/hooks/useMapData.ts)
 Central data management for map layers.
 - Fetches and processes Head Start program data
-- Loads congressional district GeoJSON files
-- Manages layer visibility state (programs, districts, boundaries)
-- Handles user geolocation
-- Provides data to TexasMap component
+- Loads the four TXHSA region geojson files in parallel
+- Manages layer visibility state (`headStartPrograms`, `txhsaRegions`)
+- Computes lazy, memoized per-region program counts via point-in-polygon
 
 **Key State:**
 - `headStartPrograms`: Array of program locations
-- `congressionalDistricts`: Array of district polygons
-- `showPrograms`, `showDistricts`, `showBoundaries`: Layer visibility flags
-- `selectedDistrict`, `selectedProgram`: Currently selected items
+- `txhsaRegions`: Array of region polygons
+- `regionProgramCounts`: `{ West, North, East, South }` count map (null until ready)
 
 ### useSearch Hook (src/hooks/useSearch.ts)
-Search functionality for programs and districts.
-- Debounced search input
+Search functionality for programs.
 - Fuzzy matching on program names, addresses, grantees
-- District search by number or representative name
-- Returns categorized results with counts
-
-### Congress.gov API (src/api/congress.ts)
-Fetches congressional representative data.
-- Retry logic with exponential backoff (max 3 retries)
-- Caches responses to minimize API calls
-- Graceful fallback to static data if API unavailable
-- Error classification and reporting
+- Returns programs only (district search was removed when the overlay was replaced)
 
 ## Data Files
 
-### Head Start Programs (public/assets/geojson/programs/)
-GeoJSON files containing:
+### Head Start Programs (public/assets/geojson/headStartPrograms.json)
+JSON file containing:
 - Program name and type (Head Start, Early Head Start)
 - Full address (street, city, ZIP)
 - Grantee organization
 - Funding information
 - Geographic coordinates
 
-### Congressional Districts (public/assets/geojson/TX-{1-38}/)
-GeoJSON polygon files for each district:
-- District boundaries (multi-polygon)
-- District number
-- Representative name (static fallback)
-- Population data
+### TXHSA Regions (public/assets/txhsa-geojson/)
+Four committed geojson files - `west.geojson`, `north.geojson`, `east.geojson`, `south.geojson` - each a single-feature FeatureCollection with `properties.name` set to the region name.
 
-**Note:** Districts 37 and 38 don't exist; Texas has 36 districts.
+Generated by `scripts/build-txhsa-regions.ts` from:
+- `public/assets/source/tx-counties.geojson` (Texas counties source)
+- `src/data/tdemCountyRegions.ts` (county → TDEM region lookup + 4-way merge mapping)
+
+Run `npm run build:regions` after updating either input to regenerate the four output files.
 
 ## Common Development Tasks
 
@@ -269,35 +237,13 @@ GeoJSON polygon files for each district:
 5. Create corresponding test file
 6. Import and use in parent component
 
-### Adding a New Data Layer
-1. Add GeoJSON data to `public/assets/geojson/`
-2. Create processing function in `src/data/`
-3. Add state management to `useMapData` hook
-4. Add toggle control in `MapControls` component
-5. Render markers/polygons in `TexasMap` component
-6. Add search support in `useSearch` hook if applicable
-
 ### Updating Styling
 - Edit Tailwind classes directly in component JSX
 - For global styles, update `src/styles/design-system.css`
 - Custom colors defined in `tailwind.config.js`
-- Theme follows Texas color palette (blues and oranges)
-
-### Adding API Integration
-1. Create client in `src/api/` directory
-2. Implement retry logic and error handling
-3. Add TypeScript types for responses
-4. Use in appropriate component or hook
-5. Add tests with mocked responses
-6. Document required environment variables
+- Theme follows Texas color palette (blues and oranges); regions use distinct categorical hues
 
 ## Known Issues and Gotchas
-
-### Congressional Districts
-- **Issue**: Districts TX-37 and TX-38 files exist but shouldn't
-  - **Cause**: Historical numbering or placeholder data
-  - **Impact**: Filtered out in code (see `congressionalDistricts.ts`)
-  - **Solution**: Data processor ignores these district numbers
 
 ### Environment Variables
 - **Gotcha**: Vite requires `VITE_` prefix for all env vars
@@ -305,14 +251,12 @@ GeoJSON polygon files for each district:
 - **Gotcha**: Server restart required after changing env vars
 
 ### Map Rendering
-- **Gotcha**: Initial map render may be slow with all layers visible
-- **Solution**: Lazy load districts, show programs by default
-- **Optimization**: Consider implementing map clustering for programs
+- **Gotcha**: Initial map render may be slow with the regions layer on
+- **Optimization**: Regions layer defaults OFF; programs show by default
 
-### Search Performance
-- **Issue**: Search can be slow with large result sets
-- **Solution**: Already debounced (300ms)
-- **Optimization**: Consider implementing virtual scrolling for results
+### Region Build
+- **Gotcha**: A county present in `tx-counties.geojson` but missing from `tdemCountyRegions.ts` causes the build script to fail with the county name. This is intentional - silent omission would produce gaps.
+- **Gotcha**: Some Texas county names have spelling drift across sources (e.g., "La Salle" vs "LaSalle"). The lookup uses the spelling in `tx-counties.geojson`.
 
 ## Deployment Considerations
 
@@ -330,7 +274,7 @@ npm run build
 
 ### Performance Optimization
 - Build output includes code splitting
-- Lazy load district GeoJSON files
+- TXHSA region files are static and cache well
 - Images and icons optimized
 - Consider CDN for static assets
 
@@ -344,10 +288,11 @@ npm run build
 
 - [Google Maps JavaScript API Docs](https://developers.google.com/maps/documentation/javascript)
 - [@vis.gl/react-google-maps Docs](https://visgl.github.io/react-google-maps/)
-- [Congress.gov API Docs](https://api.congress.gov/)
+- [TDEM Regions](https://tdem.texas.gov/regions)
 - [Tailwind CSS Docs](https://tailwindcss.com/docs)
 - [React Testing Library Docs](https://testing-library.com/react)
 - [Playwright Docs](https://playwright.dev/)
+- [@turf/union Docs](https://turfjs.org/docs/api/union)
 
 ## Getting Help
 

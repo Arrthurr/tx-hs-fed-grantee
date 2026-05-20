@@ -1,277 +1,267 @@
-import { renderHook, act } from '@testing-library/react';
-import { waitFor } from '@testing-library/react';
-import { useMapData } from './useMapData';
+import { renderHook, act, waitFor } from '@testing-library/react';
+import { useMapDataInternal as useMapData } from './useMapData';
 
-// Mock fetch for GeoJSON data
 global.fetch = jest.fn();
 
-// Mock response data
 const mockHeadStartProgramsData = [
   {
     name: 'Test Program 1',
     address: '123 Test St, Austin, TX',
-    coordinates: { lat: 30.2672, lng: -97.7431 }
+    coordinates: { lat: 30.2672, lng: -97.7431 },
   },
   {
     name: 'Test Program 2',
     address: '456 Test Ave, Houston, TX',
-    coordinates: { lat: 29.7604, lng: -95.3698 }
-  }
+    coordinates: { lat: 29.7604, lng: -95.3698 },
+  },
 ];
 
-const mockDistrictData = {
-  type: 'Feature',
-  properties: {
-    district: 'TX-1',
-    name: 'Texas 1st Congressional District',
-    representative: 'Representative 1',
-    districtNumber: 1,
-    state: 'TX'
-  },
-  geometry: {
-    type: 'Polygon',
-    coordinates: [[
-      [-97.0, 30.0],
-      [-97.0, 31.0],
-      [-96.0, 31.0],
-      [-96.0, 30.0],
-      [-97.0, 30.0]
-    ]]
-  }
+// Helper to build a region geojson covering a 2x2 lng/lat box.
+const regionFixture = (name: 'West' | 'North' | 'East' | 'South', minLng: number, minLat: number) => ({
+  type: 'FeatureCollection',
+  features: [{
+    type: 'Feature',
+    properties: { name },
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [minLng, minLat],
+        [minLng + 2, minLat],
+        [minLng + 2, minLat + 2],
+        [minLng, minLat + 2],
+        [minLng, minLat],
+      ]],
+    },
+  }],
+});
+
+// Fixture geometry chosen so every mock program lands in exactly one region.
+// Houston in the test data sits at lat 29.76, so the south fixture spans
+// 29 -> 31 vertically; Austin (30.27) falls in north (-99 .. -97 lng).
+const regionFixtures: Record<string, ReturnType<typeof regionFixture>> = {
+  west:  regionFixture('West',  -101, 30),
+  north: regionFixture('North',  -99, 30),
+  east:  regionFixture('East',   -97, 30),
+  south: regionFixture('South',  -96, 29),
 };
 
 describe('useMapData Hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
-    // Mock successful fetch for Head Start programs
+
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('headStartPrograms.json')) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve(mockHeadStartProgramsData)
+          json: () => Promise.resolve(mockHeadStartProgramsData),
         });
       }
-      
-      // Mock successful fetch for congressional districts
-      if (url.includes('shape.geojson')) {
+      const regionMatch = url.match(/txhsa-geojson\/(west|north|east|south)\.geojson/);
+      if (regionMatch) {
         return Promise.resolve({
           ok: true,
-          json: () => Promise.resolve(mockDistrictData)
+          json: () => Promise.resolve(regionFixtures[regionMatch[1]]),
         });
       }
-      
       return Promise.reject(new Error('Not found'));
     });
   });
 
   test('initializes with default layer visibility', () => {
     const { result } = renderHook(() => useMapData());
-    
+
     expect(result.current.layerVisibility).toEqual({
       majorCities: false,
-      districtBoundaries: false,
       counties: false,
       headStartPrograms: true,
+      txhsaRegions: false,
     });
   });
 
   test('toggles layer visibility', () => {
     const { result } = renderHook(() => useMapData());
-    
-    // Initially, headStartPrograms should be true and districtBoundaries should be false
+
     expect(result.current.layerVisibility.headStartPrograms).toBe(true);
-    expect(result.current.layerVisibility.districtBoundaries).toBe(false);
-    
-    // Toggle districtBoundaries layer
+    expect(result.current.layerVisibility.txhsaRegions).toBe(false);
+
     act(() => {
-      result.current.toggleLayer('districtBoundaries');
+      result.current.toggleLayer('txhsaRegions');
     });
-    
-    // Now districtBoundaries should be true
-    expect(result.current.layerVisibility.districtBoundaries).toBe(true);
-    
-    // Toggle headStartPrograms layer
+    expect(result.current.layerVisibility.txhsaRegions).toBe(true);
+
     act(() => {
       result.current.toggleLayer('headStartPrograms');
     });
-    
-    // Now headStartPrograms should be false
-    expect(result.current.layerVisibility.headStartPrograms).toBe(false);
-  });
-
-  test('sets specific layer visibility', () => {
-    const { result } = renderHook(() => useMapData());
-    
-    // Set districtBoundaries to true
-    act(() => {
-      result.current.setLayerVisibilityState('districtBoundaries', true);
-    });
-    
-    // districtBoundaries should be true
-    expect(result.current.layerVisibility.districtBoundaries).toBe(true);
-    
-    // Set headStartPrograms to false
-    act(() => {
-      result.current.setLayerVisibilityState('headStartPrograms', false);
-    });
-    
-    // headStartPrograms should be false
     expect(result.current.layerVisibility.headStartPrograms).toBe(false);
   });
 
   test('loads Head Start programs data', async () => {
     const { result } = renderHook(() => useMapData());
-    
-    // Initially, isLoading should be true
+
     expect(result.current.isLoadingPrograms).toBe(true);
-    
-    // Wait for data to load
+
     await waitFor(() => {
       expect(result.current.isLoadingPrograms).toBe(false);
     });
-    
-    // Check if programs were loaded
+
     expect(result.current.headStartPrograms.length).toBe(mockHeadStartProgramsData.length);
     expect(result.current.headStartPrograms[0].name).toBe(mockHeadStartProgramsData[0].name);
   });
 
-  test('loads congressional districts data', async () => {
-    const { result } = renderHook(() => useMapData());
-    
-    // Initially, isLoading should be true
-    expect(result.current.isLoadingDistricts).toBe(true);
-    
-    // Wait for data to load
-    await waitFor(() => {
-      expect(result.current.isLoadingDistricts).toBe(false);
-    });
-    
-    // Check if districts were loaded
-    expect(result.current.congressionalDistricts.length).toBeGreaterThan(0);
-    
-    // Check if rawDistrictFeatures were loaded
-    expect(result.current.rawDistrictFeatures).toBeDefined();
-    expect(Array.isArray(result.current.rawDistrictFeatures)).toBe(true);
-  });
-
   test('handles fetch errors for Head Start programs', async () => {
-    // Mock fetch error for Head Start programs
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('headStartPrograms.json')) {
         return Promise.reject(new Error('Failed to fetch programs'));
       }
-      
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({})
-      });
+      const regionMatch = url.match(/txhsa-geojson\/(west|north|east|south)\.geojson/);
+      if (regionMatch) {
+        return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixtures[regionMatch[1]]) });
+      }
+      return Promise.reject(new Error('Not found'));
     });
-    
+
     const { result } = renderHook(() => useMapData());
-    
-    // Wait for error to be set
+
     await waitFor(() => {
       expect(result.current.programsError).toBeTruthy();
     });
-    
-    // Check if error was set
     expect(result.current.hasErrors).toBe(true);
   });
 
-  test('handles fetch errors for congressional districts', async () => {
-    // Mock fetch error for congressional districts
-    (global.fetch as jest.Mock).mockImplementation((url: string) => {
-      if (url.includes('shape.geojson')) {
-        return Promise.reject(new Error('Failed to fetch districts'));
-      }
-      
-      return Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({})
-      });
-    });
-    
+  test('returns programs based on layer visibility', async () => {
     const { result } = renderHook(() => useMapData());
-    
-    // Wait for error to be set
-    await waitFor(() => {
-      expect(result.current.districtsError).toBeTruthy();
-    });
-    
-    // Check if error was set
-    expect(result.current.hasErrors).toBe(true);
-  });
 
-  test('returns visible programs based on layer visibility', async () => {
-    const { result } = renderHook(() => useMapData());
-    
-    // Wait for data to load
     await waitFor(() => {
       expect(result.current.isLoadingPrograms).toBe(false);
     });
-    
-    // Initially, headStartPrograms layer is visible
+
     expect(result.current.headStartPrograms.length).toBe(mockHeadStartProgramsData.length);
-    
-    // Toggle headStartPrograms layer off
+
     act(() => {
       result.current.toggleLayer('headStartPrograms');
     });
-    
-    // Now headStartPrograms should be empty when layer is off (this test needs verification)
-    // Note: The actual behavior depends on the useMapData implementation
     expect(result.current.layerVisibility.headStartPrograms).toBe(false);
   });
 
-  test('returns visible districts based on layer visibility', async () => {
-    const { result } = renderHook(() => useMapData());
-    
-    // Wait for data to load
-    await waitFor(() => {
-      expect(result.current.isLoadingDistricts).toBe(false);
+  describe('TXHSA regions', () => {
+    test('loads the four region files in parallel and exposes them', async () => {
+      const { result } = renderHook(() => useMapData());
+
+      await waitFor(() => {
+        expect(result.current.isLoadingRegions).toBe(false);
+      });
+
+      expect(result.current.txhsaRegions).toHaveLength(4);
+      expect(result.current.txhsaRegions.map(r => r.name).sort())
+        .toEqual(['East', 'North', 'South', 'West']);
+      expect(result.current.regionsError).toBeNull();
     });
-    
-    // Initially, districtBoundaries layer is not visible
-    expect(result.current.layerVisibility.districtBoundaries).toBe(false);
-    
-    // Toggle districtBoundaries layer on
-    act(() => {
-      result.current.toggleLayer('districtBoundaries');
+
+    test('reports regionsError when any one region fetch fails', async () => {
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('headStartPrograms.json')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHeadStartProgramsData) });
+        }
+        if (url.includes('txhsa-geojson/east.geojson')) {
+          return Promise.resolve({ ok: false, status: 404, statusText: 'Not Found' });
+        }
+        const m = url.match(/txhsa-geojson\/(west|north|south)\.geojson/);
+        if (m) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixtures[m[1]]) });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const { result } = renderHook(() => useMapData());
+      await waitFor(() => {
+        expect(result.current.regionsError).toBeTruthy();
+      });
+      expect(result.current.txhsaRegions).toHaveLength(0);
     });
-    
-    // Now districtBoundaries layer should be visible
-    expect(result.current.layerVisibility.districtBoundaries).toBe(true);
+
+    test('computes per-region program counts via point-in-polygon', async () => {
+      const { result } = renderHook(() => useMapData());
+
+      await waitFor(() => {
+        expect(result.current.isLoadingPrograms).toBe(false);
+        expect(result.current.isLoadingRegions).toBe(false);
+      });
+
+      await waitFor(() => {
+        expect(result.current.regionProgramCounts).not.toBeNull();
+      });
+
+      const counts = result.current.regionProgramCounts!;
+      const total = counts.West + counts.North + counts.East + counts.South;
+      // R10 invariant: every program is counted in exactly one region.
+      expect(total).toBe(result.current.headStartPrograms.length);
+      for (const name of ['West', 'North', 'East', 'South'] as const) {
+        expect(Number.isInteger(counts[name])).toBe(true);
+        expect(counts[name]).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    test('reports regionsError when a region payload is malformed (HTTP 200, bad shape)', async () => {
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('headStartPrograms.json')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHeadStartProgramsData) });
+        }
+        if (url.includes('txhsa-geojson/west.geojson')) {
+          // Recognized-shape FeatureCollection but with an unknown region name
+          // -- validateTxhsaRegion should reject this and trigger regionsError.
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              type: 'FeatureCollection',
+              features: [{
+                type: 'Feature',
+                properties: { name: 'Central' },
+                geometry: { type: 'Polygon', coordinates: [[[0,0],[1,0],[1,1],[0,1],[0,0]]] },
+              }],
+            }),
+          });
+        }
+        const m = url.match(/txhsa-geojson\/(north|east|south)\.geojson/);
+        if (m) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixtures[m[1]]) });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const { result } = renderHook(() => useMapData());
+      await waitFor(() => {
+        expect(result.current.regionsError).toBeTruthy();
+      });
+      expect(result.current.txhsaRegions).toHaveLength(0);
+    });
   });
 
-  test('reloads data when calling load functions', async () => {
+  test('reloads programs when calling load function', async () => {
     const { result } = renderHook(() => useMapData());
-    
-    // Wait for initial data to load
+
     await waitFor(() => {
       expect(result.current.isLoadingPrograms).toBe(false);
     });
-    
-    // Clear mocks to track new calls
+
     (global.fetch as jest.Mock).mockClear();
-    
-    // Call loadHeadStartPrograms
     act(() => {
       result.current.loadHeadStartPrograms();
     });
-    
-    // Check if fetch was called for programs
-    expect(global.fetch).toHaveBeenCalledWith('/assets/geojson/headStartPrograms.json');
-    
-    // Clear mocks again
-    (global.fetch as jest.Mock).mockClear();
-    
-    // Call loadCongressionalDistricts
-    act(() => {
-      result.current.loadCongressionalDistricts();
-    });
-    
-    // Check if fetch was called for districts
-    expect(global.fetch).toHaveBeenCalled();
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/assets/geojson/headStartPrograms.json',
+      expect.objectContaining({ signal: expect.anything() }),
+    );
+  });
+
+  test('hook return value does not include legacy district / congress fields', () => {
+    const { result } = renderHook(() => useMapData());
+    expect(result.current).not.toHaveProperty('districts');
+    expect(result.current).not.toHaveProperty('congressionalDistricts');
+    expect(result.current).not.toHaveProperty('rawDistrictFeatures');
+    expect(result.current).not.toHaveProperty('districtsError');
+    expect(result.current).not.toHaveProperty('congressDataError');
+    expect(result.current).not.toHaveProperty('loadCongressionalDistricts');
+    expect(result.current).not.toHaveProperty('loadCongressionalData');
+    expect(result.current.layerVisibility).not.toHaveProperty('districtBoundaries');
   });
 });
