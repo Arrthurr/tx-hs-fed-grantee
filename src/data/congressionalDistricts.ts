@@ -163,64 +163,10 @@ export const getCongressionalDistrictAtPoint = (
   });
 };
 
-/**
- * Simple point-in-polygon check for single polygon
- * @param lat - Latitude of the point
- * @param lng - Longitude of the point
- * @param geometry - Geometry to check against
- * @returns True if point is inside polygon
- */
-export const isPointInPolygon = (
-  lat: number, 
-  lng: number, 
-  geometry: CongressionalDistrictFeature['geometry']
-): boolean => {
-  if (geometry.type === 'Polygon') {
-    return isPointInSinglePolygon(lat, lng, geometry.coordinates as number[][][]);
-  } else if (geometry.type === 'MultiPolygon') {
-    return isPointInMultiPolygon(lat, lng, geometry.coordinates as number[][][][]);
-  }
-  return false;
-};
-
-/**
- * Check if point is inside a single polygon using ray casting algorithm
- * @param lat - Latitude of the point
- * @param lng - Longitude of the point
- * @param coordinates - Polygon coordinates (in GeoJSON format: [lng, lat])
- * @returns True if point is inside polygon
- */
-export const isPointInSinglePolygon = (lat: number, lng: number, coordinates: number[][][]): boolean => {
-  if (coordinates.length === 0) return false;
-  
-  const polygon = coordinates[0]; // Use the outer ring
-  let inside = false;
-  
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    // GeoJSON coordinates are [longitude, latitude]
-    const xi = polygon[i][0]; // longitude
-    const yi = polygon[i][1]; // latitude
-    const xj = polygon[j][0]; // longitude
-    const yj = polygon[j][1]; // latitude
-    
-    if (((yi > lat) !== (yj > lat)) && (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi)) {
-      inside = !inside;
-    }
-  }
-  
-  return inside;
-};
-
-/**
- * Check if point is inside a multi-polygon
- * @param lat - Latitude of the point
- * @param lng - Longitude of the point
- * @param coordinates - Multi-polygon coordinates
- * @returns True if point is inside any polygon
- */
-export const isPointInMultiPolygon = (lat: number, lng: number, coordinates: number[][][][]): boolean => {
-  return coordinates.some(polygon => isPointInSinglePolygon(lat, lng, polygon));
-};
+// Point-in-polygon helpers were moved to src/utils/geometry.ts so the new
+// TXHSA region overlay can share them. Re-exported here so existing imports
+// keep working until the district stack is removed in U8.
+export { isPointInPolygon, isPointInSinglePolygon, isPointInMultiPolygon } from '../utils/geometry';
 
 /**
  * Get statistics about congressional districts

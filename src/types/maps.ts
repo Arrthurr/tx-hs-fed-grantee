@@ -249,6 +249,35 @@ export interface CongressApiMember {
 }
 
 /**
+ * TXHSA region name (the four merged regions shown on the overlay).
+ */
+export type TxhsaRegionName = 'West' | 'North' | 'East' | 'South';
+
+/**
+ * GeoJSON feature shape for a single TXHSA region.
+ */
+export interface TxhsaRegionFeature {
+  type: 'Feature';
+  properties: { name: TxhsaRegionName };
+  geometry: {
+    type: 'Polygon' | 'MultiPolygon';
+    coordinates: number[][][] | number[][][][];
+  };
+}
+
+/**
+ * Processed TXHSA region used by the map layer.
+ */
+export interface TxhsaRegion {
+  /** Region name (matches the source `properties.name`) */
+  name: TxhsaRegionName;
+  /** Original GeoJSON feature */
+  feature: TxhsaRegionFeature;
+  /** Geographic centroid used for label / fitBounds positioning */
+  center: google.maps.LatLngLiteral;
+}
+
+/**
  * Congress.gov API response structure
  */
 export interface CongressApiResponse {
