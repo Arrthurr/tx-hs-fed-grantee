@@ -9,7 +9,7 @@ interface MapControlsProps {
   /** Layer visibility state */
   layerVisibility: {
     programs: boolean;
-    districtBoundaries: boolean;
+    txhsaRegions: boolean;
   };
   /** Function to toggle layer visibility */
   onToggleLayer: (layer: keyof MapControlsProps['layerVisibility']) => void;
@@ -247,21 +247,21 @@ const MapControls: React.FC<MapControlsProps> = ({
           </button>
 
           <button
-            onClick={() => onToggleLayer('districtBoundaries')}
+            onClick={() => onToggleLayer('txhsaRegions')}
             className={`p-4 hover:bg-tx-gray-50 transition-all duration-200 w-full flex items-center justify-between group ${
-              layerVisibility.districtBoundaries ? 'bg-district-accent' : ''
+              layerVisibility.txhsaRegions ? 'bg-tx-gray-100' : ''
             }`}
-            title="Toggle District Boundaries"
-            aria-label="Toggle district boundaries layer"
-            aria-pressed={layerVisibility.districtBoundaries}
+            title="Toggle TXHSA Regions"
+            aria-label="Toggle TXHSA Regions layer"
+            aria-pressed={layerVisibility.txhsaRegions}
           >
             <div className="flex items-center space-x-3">
               <div className={`p-2 rounded-lg transition-colors duration-200 ${
-                layerVisibility.districtBoundaries
-                  ? 'bg-district-primary text-white'
+                layerVisibility.txhsaRegions
+                  ? 'bg-txhsa-accent text-white'
                   : 'bg-tx-gray-100 text-tx-gray-600 group-hover:bg-tx-gray-200'
               }`} aria-hidden="true">
-                {layerVisibility.districtBoundaries ? (
+                {layerVisibility.txhsaRegions ? (
                   <Eye className="w-4 h-4" />
                 ) : (
                   <EyeOff className="w-4 h-4" />
@@ -269,18 +269,18 @@ const MapControls: React.FC<MapControlsProps> = ({
               </div>
               <div className="text-left">
                 <span className={`text-sm font-medium transition-colors duration-200 ${
-                  layerVisibility.districtBoundaries ? 'text-district-primary' : 'text-tx-gray-700'
+                  layerVisibility.txhsaRegions ? 'text-txhsa-accent' : 'text-tx-gray-700'
                 }`}>
-                  District Boundaries
+                  TXHSA Regions
                 </span>
                 <p className="text-xs text-tx-gray-500">
-                  Show geographic boundaries
+                  Show regional boundaries
                 </p>
               </div>
             </div>
             <div className={`w-4 h-4 rounded-full border-2 transition-all duration-200 ${
-              layerVisibility.districtBoundaries
-                ? 'bg-district-primary border-district-primary'
+              layerVisibility.txhsaRegions
+                ? 'bg-txhsa-accent border-txhsa-accent'
                 : 'bg-white border-tx-gray-300 group-hover:border-tx-gray-400'
             }`} aria-hidden="true"></div>
           </button>

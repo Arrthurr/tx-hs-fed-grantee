@@ -549,17 +549,17 @@ const TexasMap: React.FC<TexasMapProps> = ({
   // Map the layer visibility from useMapData to the format expected by MapControls
   const mapControlsLayerVisibility = {
     programs: layerVisibility.headStartPrograms,
-    districtBoundaries: layerVisibility.districtBoundaries
+    txhsaRegions: layerVisibility.txhsaRegions
   };
 
   // Map the toggle function to handle the conversion
-  const handleMapControlsToggle = (layer: 'programs' | 'districtBoundaries') => {
+  const handleMapControlsToggle = (layer: 'programs' | 'txhsaRegions') => {
     switch (layer) {
       case 'programs':
         toggleLayer('headStartPrograms');
         break;
-      case 'districtBoundaries':
-        toggleLayer('districtBoundaries');
+      case 'txhsaRegions':
+        toggleLayer('txhsaRegions');
         break;
     }
   };

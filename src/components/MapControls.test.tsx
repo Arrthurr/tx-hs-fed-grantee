@@ -7,7 +7,7 @@ describe('MapControls Component', () => {
   const mockProps = {
     layerVisibility: {
       programs: true,
-      districtBoundaries: false,
+      txhsaRegions: false,
     },
     onToggleLayer: jest.fn(),
     programCount: 85,
@@ -26,7 +26,7 @@ describe('MapControls Component', () => {
     render(<MapControls {...mockProps} />);
 
     expect(screen.getByTitle('Toggle Head Start Programs')).toBeInTheDocument();
-    expect(screen.getByTitle('Toggle District Boundaries')).toBeInTheDocument();
+    expect(screen.getByTitle('Toggle TXHSA Regions')).toBeInTheDocument();
   });
 
   test('displays correct program count', () => {
@@ -40,10 +40,10 @@ describe('MapControls Component', () => {
     expect(mockProps.onToggleLayer).toHaveBeenCalledWith('programs');
   });
 
-  test('calls onToggleLayer with correct layer when District Boundaries button is clicked', () => {
+  test('calls onToggleLayer with correct layer when TXHSA Regions button is clicked', () => {
     render(<MapControls {...mockProps} />);
-    fireEvent.click(screen.getByTitle('Toggle District Boundaries'));
-    expect(mockProps.onToggleLayer).toHaveBeenCalledWith('districtBoundaries');
+    fireEvent.click(screen.getByTitle('Toggle TXHSA Regions'));
+    expect(mockProps.onToggleLayer).toHaveBeenCalledWith('txhsaRegions');
   });
 
   test('Head Start Programs button shows active state when visible', () => {
@@ -52,19 +52,25 @@ describe('MapControls Component', () => {
     expect(headStartButton).toHaveClass('bg-headstart-accent');
   });
 
-  test('District Boundaries button shows active state when visible', () => {
-    render(<MapControls {...mockProps} layerVisibility={{ ...mockProps.layerVisibility, districtBoundaries: true }} />);
-    const boundariesButton = screen.getByTitle('Toggle District Boundaries');
-    expect(boundariesButton).toHaveClass('bg-district-accent');
+  test('TXHSA Regions button reflects active state and label', () => {
+    render(<MapControls {...mockProps} layerVisibility={{ ...mockProps.layerVisibility, txhsaRegions: true }} />);
+    const regionsButton = screen.getByTitle('Toggle TXHSA Regions');
+    expect(regionsButton).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('TXHSA Regions')).toBeInTheDocument();
   });
 
   test('buttons have correct aria-pressed attributes', () => {
     render(<MapControls {...mockProps} />);
-    
+
     const headStartButton = screen.getByTitle('Toggle Head Start Programs');
-    const boundariesButton = screen.getByTitle('Toggle District Boundaries');
-    
+    const regionsButton = screen.getByTitle('Toggle TXHSA Regions');
+
     expect(headStartButton).toHaveAttribute('aria-pressed', 'true');
-    expect(boundariesButton).toHaveAttribute('aria-pressed', 'false');
+    expect(regionsButton).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('TXHSA Regions toggle has the expected aria-label', () => {
+    render(<MapControls {...mockProps} />);
+    expect(screen.getByLabelText('Toggle TXHSA Regions layer')).toBeInTheDocument();
   });
 });
