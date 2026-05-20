@@ -129,11 +129,14 @@ describe('TexasMap Component', () => {
       headStartPrograms: mockHeadStartPrograms,
       congressionalDistricts: mockCongressionalDistricts,
       rawDistrictFeatures: mockRawDistrictFeatures,
+      txhsaRegions: [],
+      regionProgramCounts: null,
       layerVisibility: {
         majorCities: false,
         districtBoundaries: false,
         counties: false,
         headStartPrograms: true,
+        txhsaRegions: false,
       },
       toggleLayer: jest.fn(),
       setLayerVisibilityState: jest.fn(),
@@ -141,15 +144,19 @@ describe('TexasMap Component', () => {
       isLoadingPrograms: false,
       isLoadingDistricts: false,
       isLoadingCongressData: false,
+      isLoadingRegions: false,
       hasErrors: false,
       programsError: null,
       districtsError: null,
       congressDataError: null,
+      regionsError: null,
       retryLoading: jest.fn(),
       loadHeadStartPrograms: jest.fn(),
       loadCongressionalDistricts: jest.fn(),
       loadCongressionalData: jest.fn(),
-    });
+      loadTxhsaRegions: jest.fn(),
+    } as any);
+    (global as any).__resetMapDataInstances?.();
   });
 
   // Mock the TexasMap component with API Provider wrapper
@@ -189,11 +196,12 @@ describe('TexasMap Component', () => {
         districtBoundaries: false,
         counties: false,
         headStartPrograms: false,
+        txhsaRegions: false,
       },
-    });
-    
+    } as any);
+
     render(<TexasMapWithProvider />);
-    
+
     // Check that no markers are rendered
     const markers = screen.queryAllByTestId('advanced-marker');
     expect(markers.length).toBe(0);
@@ -261,14 +269,141 @@ describe('TexasMap Component', () => {
     mockUseMapData.mockReturnValue({
       ...mockUseMapData(),
       toggleLayer: toggleLayerMock,
-    });
-    
+    } as any);
+
     render(<TexasMapWithProvider />);
-    
+
     // Find and click a layer toggle button
     const headStartToggle = screen.getByTitle('Toggle Head Start Programs');
     fireEvent.click(headStartToggle);
-    
+
     expect(toggleLayerMock).toHaveBeenCalledWith('headStartPrograms');
+  });
+
+  describe('TXHSA region overlay', () => {
+    const region = (name: 'West' | 'North' | 'East' | 'South') => ({
+      name,
+      feature: {
+        type: 'Feature' as const,
+        properties: { name },
+        geometry: {
+          type: 'Polygon' as const,
+          coordinates: [[
+            [-100, 30], [-99, 30], [-99, 31], [-100, 31], [-100, 30],
+          ]],
+        },
+      },
+      center: { lat: 30.5, lng: -99.5 },
+    });
+
+    const fourRegions = [region('West'), region('North'), region('East'), region('South')];
+
+    test('creates one google.maps.Data layer per region when the layer is on', async () => {
+      mockUseMapData.mockReturnValue({
+        ...mockUseMapData(),
+        txhsaRegions: fourRegions,
+        regionProgramCounts: { West: 1, North: 2, East: 3, South: 0 },
+        layerVisibility: {
+          majorCities: false,
+          districtBoundaries: false,
+          counties: false,
+          headStartPrograms: true,
+          txhsaRegions: true,
+        },
+      } as any);
+
+      render(<TexasMapWithProvider />);
+
+      await waitFor(() => {
+        const instances = (global as any).__getMapDataInstances();
+        expect(instances.length).toBeGreaterThanOrEqual(4);
+      });
+    });
+
+    test('renders a region info window with name and program count when a region is clicked', async () => {
+      mockUseMapData.mockReturnValue({
+        ...mockUseMapData(),
+        txhsaRegions: fourRegions,
+        regionProgramCounts: { West: 0, North: 2, East: 1, South: 7 },
+        layerVisibility: {
+          majorCities: false,
+          districtBoundaries: false,
+          counties: false,
+          headStartPrograms: true,
+          txhsaRegions: true,
+        },
+      } as any);
+
+      render(<TexasMapWithProvider />);
+
+      await waitFor(() => {
+        expect((global as any).__getMapDataInstances().length).toBeGreaterThanOrEqual(4);
+      });
+
+      // Fire a click on the 4th layer (South) via the mock helper.
+      const instances = (global as any).__getMapDataInstances();
+      instances[3]._fireClick({ lat: 27.5, lng: -98.0 });
+
+      const infoWindow = await screen.findByTestId('info-window');
+      expect(infoWindow).toHaveTextContent('South');
+      expect(infoWindow).toHaveTextContent('7 Head Start / Early Head Start programs in this region.');
+
+      // R11: no representative / party / committee / contact content.
+      expect(infoWindow).not.toHaveTextContent(/Representative/i);
+      expect(infoWindow).not.toHaveTextContent(/Party/i);
+      expect(infoWindow).not.toHaveTextContent(/Committee/i);
+      expect(infoWindow).not.toHaveTextContent(/Phone/i);
+      expect(infoWindow).not.toHaveTextContent(/Email/i);
+      expect(infoWindow).not.toHaveTextContent(/Office/i);
+    });
+
+    test('region info window shows singular copy for count of 1', async () => {
+      mockUseMapData.mockReturnValue({
+        ...mockUseMapData(),
+        txhsaRegions: fourRegions,
+        regionProgramCounts: { West: 1, North: 0, East: 0, South: 0 },
+        layerVisibility: {
+          majorCities: false,
+          districtBoundaries: false,
+          counties: false,
+          headStartPrograms: true,
+          txhsaRegions: true,
+        },
+      } as any);
+
+      render(<TexasMapWithProvider />);
+      await waitFor(() => {
+        expect((global as any).__getMapDataInstances().length).toBeGreaterThanOrEqual(4);
+      });
+      (global as any).__getMapDataInstances()[0]._fireClick({ lat: 30.5, lng: -99.5 });
+
+      const infoWindow = await screen.findByTestId('info-window');
+      expect(infoWindow).toHaveTextContent('1 Head Start / Early Head Start program in this region.');
+    });
+
+    test('region info window shows a loading message when counts are not yet computed', async () => {
+      mockUseMapData.mockReturnValue({
+        ...mockUseMapData(),
+        txhsaRegions: fourRegions,
+        regionProgramCounts: null,
+        layerVisibility: {
+          majorCities: false,
+          districtBoundaries: false,
+          counties: false,
+          headStartPrograms: true,
+          txhsaRegions: true,
+        },
+      } as any);
+
+      render(<TexasMapWithProvider />);
+      await waitFor(() => {
+        expect((global as any).__getMapDataInstances().length).toBeGreaterThanOrEqual(4);
+      });
+      (global as any).__getMapDataInstances()[1]._fireClick({ lat: 30.5, lng: -99.5 });
+
+      const infoWindow = await screen.findByTestId('info-window');
+      expect(infoWindow).toHaveTextContent('North');
+      expect(infoWindow).toHaveTextContent(/Loading program count/);
+    });
   });
 });

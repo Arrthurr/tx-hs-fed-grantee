@@ -52,9 +52,31 @@ const mockMap = {
   removeListener: jest.fn(),
 };
 
+// Minimal mock for google.maps.Data — captures click listeners so tests can
+// fire region polygon clicks without a real Maps instance.
+const dataInstances: any[] = [];
+const dataMockFactory = jest.fn().mockImplementation(() => {
+  const listeners: Record<string, Function[]> = {};
+  const instance = {
+    addGeoJson: jest.fn(),
+    setStyle: jest.fn(),
+    setMap: jest.fn(),
+    addListener: jest.fn((event: string, cb: Function) => {
+      (listeners[event] ||= []).push(cb);
+      return { remove: jest.fn() };
+    }),
+    _fireClick: (latLng: { lat: number; lng: number }) => {
+      (listeners.click || []).forEach(cb => cb({ latLng: { lat: () => latLng.lat, lng: () => latLng.lng } }));
+    },
+  };
+  dataInstances.push(instance);
+  return instance;
+});
+
 global.google = {
   maps: {
     Map: jest.fn().mockImplementation(() => mockMap),
+    Data: dataMockFactory,
     LatLng: jest.fn().mockImplementation((lat, lng) => ({ lat, lng })),
     LatLngBounds: jest.fn().mockImplementation(() => ({
       extend: jest.fn(),
@@ -68,6 +90,10 @@ global.google = {
     },
   },
 } as any;
+
+// Expose a helper for tests that want to grab created Data instances.
+(global as any).__getMapDataInstances = () => dataInstances;
+(global as any).__resetMapDataInstances = () => { dataInstances.length = 0; };
 
 // Mock the @vis.gl/react-google-maps hooks and components
 jest.mock('@vis.gl/react-google-maps', () => ({
