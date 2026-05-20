@@ -4,7 +4,9 @@ export default {
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.(ts|tsx|js)',
-    '<rootDir>/src/**/?(*.)(spec|test).(ts|tsx|js)'
+    '<rootDir>/src/**/?(*.)(spec|test).(ts|tsx|js)',
+    '<rootDir>/scripts/**/__tests__/**/*.(ts|js)',
+    '<rootDir>/scripts/**/?(*.)(spec|test).(ts|js)'
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
