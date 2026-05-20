@@ -69,18 +69,22 @@ export interface MapState {
 }
 
 /**
- * Layer visibility state for toggleable map layers
- * Now simplified to two primary data layers: Head Start Programs and District Boundaries
+ * Layer visibility state for toggleable map layers.
+ *
+ * `districtBoundaries` is preserved during the district -> TXHSA region cutover
+ * (U4-U7) and removed in U8 once consumers no longer reference it.
  */
 export interface LayerVisibility {
   /** Major Cities layer visibility */
   majorCities: boolean;
-  /** District Boundaries layer visibility */
+  /** District Boundaries layer visibility (legacy - removed in U8) */
   districtBoundaries: boolean;
   /** Counties layer visibility */
   counties: boolean;
   /** Head Start Programs layer visibility */
   headStartPrograms: boolean;
+  /** TXHSA Regions layer visibility */
+  txhsaRegions: boolean;
 }
 
 /**

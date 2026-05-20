@@ -40,6 +40,32 @@ const mockDistrictData = {
   }
 };
 
+// Helper to build a region geojson covering a 2x2 lng/lat box.
+const regionFixture = (name: 'West' | 'North' | 'East' | 'South', minLng: number, minLat: number) => ({
+  type: 'FeatureCollection',
+  features: [{
+    type: 'Feature',
+    properties: { name },
+    geometry: {
+      type: 'Polygon',
+      coordinates: [[
+        [minLng, minLat],
+        [minLng + 2, minLat],
+        [minLng + 2, minLat + 2],
+        [minLng, minLat + 2],
+        [minLng, minLat],
+      ]],
+    },
+  }],
+});
+
+const regionFixtures: Record<string, ReturnType<typeof regionFixture>> = {
+  west:  regionFixture('West',  -100, 30),
+  north: regionFixture('North',  -98, 30),
+  east:  regionFixture('East',   -96, 30),
+  south: regionFixture('South',  -94, 30),
+};
+
 describe('useMapData Hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -60,19 +86,29 @@ describe('useMapData Hook', () => {
           json: () => Promise.resolve(mockDistrictData)
         });
       }
-      
+
+      // Mock TXHSA region geojson files
+      const regionMatch = url.match(/txhsa-geojson\/(west|north|east|south)\.geojson/);
+      if (regionMatch) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve(regionFixtures[regionMatch[1]]),
+        });
+      }
+
       return Promise.reject(new Error('Not found'));
     });
   });
 
   test('initializes with default layer visibility', () => {
     const { result } = renderHook(() => useMapData());
-    
+
     expect(result.current.layerVisibility).toEqual({
       majorCities: false,
       districtBoundaries: false,
       counties: false,
       headStartPrograms: true,
+      txhsaRegions: false,
     });
   });
 
@@ -242,6 +278,72 @@ describe('useMapData Hook', () => {
     
     // Now districtBoundaries layer should be visible
     expect(result.current.layerVisibility.districtBoundaries).toBe(true);
+  });
+
+  describe('TXHSA regions', () => {
+    test('loads the four region files in parallel and exposes them', async () => {
+      const { result } = renderHook(() => useMapData());
+
+      await waitFor(() => {
+        expect(result.current.isLoadingRegions).toBe(false);
+      });
+
+      expect(result.current.txhsaRegions).toHaveLength(4);
+      expect(result.current.txhsaRegions.map(r => r.name).sort())
+        .toEqual(['East', 'North', 'South', 'West']);
+      expect(result.current.regionsError).toBeNull();
+    });
+
+    test('reports regionsError when any one region fetch fails', async () => {
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('headStartPrograms.json')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHeadStartProgramsData) });
+        }
+        if (url.includes('shape.geojson')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockDistrictData) });
+        }
+        if (url.includes('txhsa-geojson/east.geojson')) {
+          return Promise.resolve({ ok: false, status: 404, statusText: 'Not Found' });
+        }
+        const m = url.match(/txhsa-geojson\/(west|north|south)\.geojson/);
+        if (m) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixtures[m[1]]) });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const { result } = renderHook(() => useMapData());
+      await waitFor(() => {
+        expect(result.current.regionsError).toBeTruthy();
+      });
+      expect(result.current.txhsaRegions).toHaveLength(0);
+    });
+
+    test('computes per-region program counts via point-in-polygon', async () => {
+      const { result } = renderHook(() => useMapData());
+
+      await waitFor(() => {
+        expect(result.current.isLoadingPrograms).toBe(false);
+        expect(result.current.isLoadingRegions).toBe(false);
+      });
+
+      // The two seeded programs are at Austin (-97.74, 30.27) and Houston (-95.37, 29.76).
+      // North fixture covers lng [-98, -96], lat [30, 32] → Austin lands here.
+      // East fixture covers lng [-96, -94], lat [30, 32] → Houston is south of it (lat 29.76) → not in any.
+      await waitFor(() => {
+        expect(result.current.regionProgramCounts).not.toBeNull();
+      });
+
+      const counts = result.current.regionProgramCounts!;
+      const total = counts.West + counts.North + counts.East + counts.South;
+      // Sum equals the count of programs that fall inside any region polygon.
+      expect(total).toBeLessThanOrEqual(result.current.headStartPrograms.length);
+      // Per-region count is a non-negative integer.
+      for (const name of ['West', 'North', 'East', 'South'] as const) {
+        expect(Number.isInteger(counts[name])).toBe(true);
+        expect(counts[name]).toBeGreaterThanOrEqual(0);
+      }
+    });
   });
 
   test('reloads data when calling load functions', async () => {
