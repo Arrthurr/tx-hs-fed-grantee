@@ -1,5 +1,5 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { useMapData } from './useMapData';
+import { useMapDataInternal as useMapData } from './useMapData';
 
 global.fetch = jest.fn();
 
@@ -35,11 +35,14 @@ const regionFixture = (name: 'West' | 'North' | 'East' | 'South', minLng: number
   }],
 });
 
+// Fixture geometry chosen so every mock program lands in exactly one region.
+// Houston in the test data sits at lat 29.76, so the south fixture spans
+// 29 -> 31 vertically; Austin (30.27) falls in north (-99 .. -97 lng).
 const regionFixtures: Record<string, ReturnType<typeof regionFixture>> = {
-  west:  regionFixture('West',  -100, 30),
-  north: regionFixture('North',  -98, 30),
-  east:  regionFixture('East',   -96, 30),
-  south: regionFixture('South',  -94, 30),
+  west:  regionFixture('West',  -101, 30),
+  north: regionFixture('North',  -99, 30),
+  east:  regionFixture('East',   -97, 30),
+  south: regionFixture('South',  -96, 29),
 };
 
 describe('useMapData Hook', () => {
@@ -88,20 +91,6 @@ describe('useMapData Hook', () => {
 
     act(() => {
       result.current.toggleLayer('headStartPrograms');
-    });
-    expect(result.current.layerVisibility.headStartPrograms).toBe(false);
-  });
-
-  test('sets specific layer visibility', () => {
-    const { result } = renderHook(() => useMapData());
-
-    act(() => {
-      result.current.setLayerVisibilityState('txhsaRegions', true);
-    });
-    expect(result.current.layerVisibility.txhsaRegions).toBe(true);
-
-    act(() => {
-      result.current.setLayerVisibilityState('headStartPrograms', false);
     });
     expect(result.current.layerVisibility.headStartPrograms).toBe(false);
   });
@@ -204,11 +193,46 @@ describe('useMapData Hook', () => {
 
       const counts = result.current.regionProgramCounts!;
       const total = counts.West + counts.North + counts.East + counts.South;
-      expect(total).toBeLessThanOrEqual(result.current.headStartPrograms.length);
+      // R10 invariant: every program is counted in exactly one region.
+      expect(total).toBe(result.current.headStartPrograms.length);
       for (const name of ['West', 'North', 'East', 'South'] as const) {
         expect(Number.isInteger(counts[name])).toBe(true);
         expect(counts[name]).toBeGreaterThanOrEqual(0);
       }
+    });
+
+    test('reports regionsError when a region payload is malformed (HTTP 200, bad shape)', async () => {
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (url.includes('headStartPrograms.json')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(mockHeadStartProgramsData) });
+        }
+        if (url.includes('txhsa-geojson/west.geojson')) {
+          // Recognized-shape FeatureCollection but with an unknown region name
+          // -- validateTxhsaRegion should reject this and trigger regionsError.
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              type: 'FeatureCollection',
+              features: [{
+                type: 'Feature',
+                properties: { name: 'Central' },
+                geometry: { type: 'Polygon', coordinates: [[[0,0],[1,0],[1,1],[0,1],[0,0]]] },
+              }],
+            }),
+          });
+        }
+        const m = url.match(/txhsa-geojson\/(north|east|south)\.geojson/);
+        if (m) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixtures[m[1]]) });
+        }
+        return Promise.reject(new Error('Not found'));
+      });
+
+      const { result } = renderHook(() => useMapData());
+      await waitFor(() => {
+        expect(result.current.regionsError).toBeTruthy();
+      });
+      expect(result.current.txhsaRegions).toHaveLength(0);
     });
   });
 
@@ -223,7 +247,10 @@ describe('useMapData Hook', () => {
     act(() => {
       result.current.loadHeadStartPrograms();
     });
-    expect(global.fetch).toHaveBeenCalledWith('/assets/geojson/headStartPrograms.json');
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/assets/geojson/headStartPrograms.json',
+      expect.objectContaining({ signal: expect.anything() }),
+    );
   });
 
   test('hook return value does not include legacy district / congress fields', () => {

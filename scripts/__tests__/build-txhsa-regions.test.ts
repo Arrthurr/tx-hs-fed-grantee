@@ -46,6 +46,7 @@ describe('buildTxhsaRegions', () => {
 
       const { regions, countyCounts } = buildTxhsaRegions({
         sourcePath, outputDir, countyLookup: lookup, write: true,
+        requireAllRegionsPopulated: false,
       });
 
       expect(countyCounts).toEqual({ West: 3, North: 1, East: 0, South: 0 });
@@ -89,6 +90,71 @@ describe('buildTxhsaRegions', () => {
     }
   });
 
+  it('throws when requireAllRegionsPopulated is true and any region is empty', () => {
+    const { dir, sourcePath, outputDir } = makeWorkspace();
+    try {
+      // Only counties in TDEM 1 (west) -- north / east / south will all be empty.
+      const source = {
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', properties: { COUNTY: 'A County' }, geometry: square(0, 0) },
+          { type: 'Feature', properties: { COUNTY: 'B County' }, geometry: square(1, 0) },
+        ],
+      };
+      writeFileSync(sourcePath, JSON.stringify(source));
+      const lookup: Record<string, RegionNum> = { A: 1, B: 1 };
+
+      expect(() =>
+        buildTxhsaRegions({
+          sourcePath, outputDir, countyLookup: lookup, write: false,
+          requireAllRegionsPopulated: true,
+        }),
+      ).toThrow(/North|East|South/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('throws a clear error when @turf/union returns null for a region', () => {
+    const { dir, sourcePath, outputDir } = makeWorkspace();
+    try {
+      // Two counties at the SAME center with identical 1-degree squares so
+      // @turf/union sees overlapping geometries that the lib reports as null
+      // for the merged result. (Some union implementations return null on
+      // certain degenerate inputs; the build script's null-guard turns that
+      // into an explicit failure rather than silent bad output.)
+      const degenerate = {
+        type: 'Polygon' as const,
+        coordinates: [[[0, 0], [0, 0], [0, 0], [0, 0]]],
+      };
+      const source = {
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', properties: { COUNTY: 'A County' }, geometry: degenerate },
+          { type: 'Feature', properties: { COUNTY: 'B County' }, geometry: degenerate },
+          { type: 'Feature', properties: { COUNTY: 'C County' }, geometry: square(5, 5) },
+          { type: 'Feature', properties: { COUNTY: 'D County' }, geometry: square(10, 10) },
+          { type: 'Feature', properties: { COUNTY: 'E County' }, geometry: square(15, 15) },
+        ],
+      };
+      writeFileSync(sourcePath, JSON.stringify(source));
+      // A,B → West (TDEM 1+7); C → North (TDEM 2); D → East (TDEM 4); E → South (TDEM 5).
+      const lookup: Record<string, RegionNum> = { A: 1, B: 7, C: 2, D: 4, E: 5 };
+
+      // Either union returns null (-> our explicit "Union produced no result" error)
+      // or it throws internally because the inputs aren't valid polygons. Either way
+      // the script must fail rather than write a corrupted region file.
+      expect(() =>
+        buildTxhsaRegions({
+          sourcePath, outputDir, countyLookup: lookup, write: false,
+          requireAllRegionsPopulated: false,
+        }),
+      ).toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('places every input feature in exactly one output region', () => {
     const { dir, sourcePath, outputDir } = makeWorkspace();
     try {
@@ -108,6 +174,7 @@ describe('buildTxhsaRegions', () => {
 
       const { countyCounts } = buildTxhsaRegions({
         sourcePath, outputDir, countyLookup: lookup, write: false,
+        requireAllRegionsPopulated: false,
       });
 
       const total = countyCounts.West + countyCounts.North + countyCounts.East + countyCounts.South;

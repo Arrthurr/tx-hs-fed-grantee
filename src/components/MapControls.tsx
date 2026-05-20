@@ -29,7 +29,6 @@ const MapControls: React.FC<MapControlsProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragPosition, setDragPosition] = useState({ x: 16, y: 82 }); // Default position (left-4, top-[82px])
   const cardRef = useRef<HTMLDivElement>(null);
-  const mapContainerElementRef = useRef<HTMLDivElement | null>(null);
   const dragState = useRef<{
     originX: number;
     originY: number;
@@ -142,13 +141,6 @@ const MapControls: React.FC<MapControlsProps> = ({
 
     setDragPosition({ x: newX, y: newY });
   }, [dragPosition, mapContainerRef]);
-
-  /**
-   * Sync the map container element ref
-   */
-  useEffect(() => {
-    mapContainerElementRef.current = mapContainerRef?.current || null;
-  }, [mapContainerRef]);
 
   /**
    * Cleanup pointer events on unmount (automatic with pointer capture)

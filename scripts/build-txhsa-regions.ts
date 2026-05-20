@@ -7,10 +7,12 @@
  * Run with: npm run build:regions
  *
  * Inputs:
- *   - public/assets/source/tx-counties.geojson
+ *   - scripts/source/tx-counties.geojson
  *       Texas counties, Polygon/MultiPolygon, with a `COUNTY` property like
  *       "Sherman County". Provenance: github.com/Cincome/tx.geojson
- *       (counties/tx_counties.geojson, downloaded 2026-05-19).
+ *       (counties/tx_counties.geojson, downloaded 2026-05-19). Lives outside
+ *       public/ so Vite does not ship this 8 MB file to clients — it is
+ *       build-only input.
  *   - src/data/tdemCountyRegions.ts
  *       Authoritative lookup from county name (without " County" suffix) to
  *       TDEM region 1-8, plus the 4-way merge mapping.
@@ -37,7 +39,7 @@ type TxhsaName = 'West' | 'North' | 'East' | 'South';
 
 const repoRoot = process.cwd();
 
-const SOURCE_PATH = path.join(repoRoot, 'public/assets/source/tx-counties.geojson');
+const SOURCE_PATH = path.join(repoRoot, 'scripts/source/tx-counties.geojson');
 const OUTPUT_DIR = path.join(repoRoot, 'public/assets/txhsa-geojson');
 
 const REGIONS: TxhsaName[] = ['West', 'North', 'East', 'South'];
@@ -47,6 +49,14 @@ export interface BuildOptions {
   outputDir?: string;
   countyLookup?: Record<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
   write?: boolean;
+  /**
+   * When true (the CLI default), throws if any TXHSA region ends up with zero
+   * counties after grouping. Texas has ~254 counties spread across all four
+   * regions, so an empty region indicates a malformed source or lookup. Tests
+   * that intentionally exercise sparse fixtures should pass `false` to allow
+   * legitimately-empty regions.
+   */
+  requireAllRegionsPopulated?: boolean;
 }
 
 export interface BuildResult {
@@ -59,6 +69,7 @@ export function buildTxhsaRegions(options: BuildOptions = {}): BuildResult {
   const outputDir = options.outputDir ?? OUTPUT_DIR;
   const countyLookup = options.countyLookup ?? tdemCountyRegions;
   const write = options.write ?? true;
+  const requireAllRegionsPopulated = options.requireAllRegionsPopulated ?? true;
 
   const raw = JSON.parse(readFileSync(sourcePath, 'utf-8')) as FeatureCollection<
     Polygon | MultiPolygon,
@@ -95,6 +106,20 @@ export function buildTxhsaRegions(options: BuildOptions = {}): BuildResult {
     );
   }
 
+  // Texas has ~254 counties spread across all four TXHSA regions. An empty
+  // region in a real build implies a malformed source file or a corrupted
+  // lookup -- failing here keeps the empty file from shipping silently and
+  // confusing the runtime loader. Tests with sparse fixtures opt out.
+  if (requireAllRegionsPopulated) {
+    const emptyRegions = REGIONS.filter(name => groups[name].length === 0);
+    if (emptyRegions.length > 0) {
+      throw new Error(
+        `Region(s) ended up with zero counties after grouping: ${emptyRegions.join(', ')}. ` +
+        `This indicates a malformed county source or county→TDEM lookup.`,
+      );
+    }
+  }
+
   const regions = {} as BuildResult['regions'];
   const countyCounts = { West: 0, North: 0, East: 0, South: 0 } as Record<TxhsaName, number>;
 
@@ -105,14 +130,14 @@ export function buildTxhsaRegions(options: BuildOptions = {}): BuildResult {
   for (const name of REGIONS) {
     const members = groups[name];
     countyCounts[name] = members.length;
+
     if (members.length === 0) {
-      regions[name] = {
-        type: 'FeatureCollection',
-        features: [],
-      };
+      regions[name] = { type: 'FeatureCollection', features: [] };
       if (write) {
-        writeFileSync(path.join(outputDir, `${name.toLowerCase()}.geojson`),
-          JSON.stringify(regions[name]));
+        writeFileSync(
+          path.join(outputDir, `${name.toLowerCase()}.geojson`),
+          JSON.stringify(regions[name]),
+        );
       }
       continue;
     }

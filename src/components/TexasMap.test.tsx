@@ -82,7 +82,6 @@ describe('TexasMap Component', () => {
     
     // Setup default mock implementations
     mockUseMapData.mockReturnValue({
-      programs: mockHeadStartPrograms,
       headStartPrograms: mockHeadStartPrograms,
       txhsaRegions: [],
       regionProgramCounts: null,
@@ -93,7 +92,6 @@ describe('TexasMap Component', () => {
         txhsaRegions: false,
       },
       toggleLayer: jest.fn(),
-      setLayerVisibilityState: jest.fn(),
       isLoading: false,
       isLoadingPrograms: false,
       isLoadingRegions: false,
@@ -225,6 +223,21 @@ describe('TexasMap Component', () => {
     fireEvent.click(headStartToggle);
 
     expect(toggleLayerMock).toHaveBeenCalledWith('headStartPrograms');
+  });
+
+  test('calls toggleLayer with txhsaRegions when the TXHSA Regions toggle is clicked', () => {
+    const toggleLayerMock = jest.fn();
+    mockUseMapData.mockReturnValue({
+      ...mockUseMapData(),
+      toggleLayer: toggleLayerMock,
+    } as any);
+
+    render(<TexasMapWithProvider />);
+
+    const regionsToggle = screen.getByTitle('Toggle TXHSA Regions');
+    fireEvent.click(regionsToggle);
+
+    expect(toggleLayerMock).toHaveBeenCalledWith('txhsaRegions');
   });
 
   describe('TXHSA region overlay', () => {

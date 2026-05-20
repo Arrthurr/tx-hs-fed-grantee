@@ -80,6 +80,7 @@ global.google = {
     event: {
       addListener: jest.fn(),
       removeListener: jest.fn(),
+      clearInstanceListeners: jest.fn(),
     },
   },
 } as any;

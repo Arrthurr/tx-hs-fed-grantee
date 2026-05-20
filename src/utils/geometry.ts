@@ -6,22 +6,19 @@
  * the coordinate arrays.
  */
 
-export type PolygonGeometry =
-  | { type: 'Polygon'; coordinates: number[][][] }
-  | { type: 'MultiPolygon'; coordinates: number[][][][] };
+import type { PolygonGeometry } from '../types/maps';
+
+export type { PolygonGeometry };
 
 export const isPointInPolygon = (
   lat: number,
   lng: number,
-  geometry: { type: string; coordinates: number[][][] | number[][][][] },
+  geometry: PolygonGeometry,
 ): boolean => {
   if (geometry.type === 'Polygon') {
-    return isPointInSinglePolygon(lat, lng, geometry.coordinates as number[][][]);
+    return isPointInSinglePolygon(lat, lng, geometry.coordinates);
   }
-  if (geometry.type === 'MultiPolygon') {
-    return isPointInMultiPolygon(lat, lng, geometry.coordinates as number[][][][]);
-  }
-  return false;
+  return isPointInMultiPolygon(lat, lng, geometry.coordinates);
 };
 
 export const isPointInSinglePolygon = (

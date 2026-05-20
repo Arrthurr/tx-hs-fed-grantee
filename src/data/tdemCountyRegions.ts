@@ -1,12 +1,14 @@
+import type { TxhsaRegionName } from '../types/maps';
+
 /**
  * Maps each Texas county to its TDEM (Texas Division of Emergency Management)
  * region number (1-8).
  *
  * Source: https://tdem.texas.gov/regions (Region 1-8 pages, fetched 2026-05-19).
  *
- * County names use the same spelling as the Census TIGER source file at
- * public/assets/source/tx-counties.geojson (e.g., "La Salle" with a space,
- * "DeWitt" without). The script at scripts/build-txhsa-regions.mjs reads this
+ * County names use the same spelling as the Census TIGER source file (see
+ * scripts/source/tx-counties.geojson — e.g., "La Salle" with a space,
+ * "DeWitt" without). The script at scripts/build-txhsa-regions.ts reads this
  * lookup, normalizes the geojson's `COUNTY` field by stripping " County", and
  * fails loudly if any county is missing from this table.
  */
@@ -81,7 +83,7 @@ export const tdemCountyRegions: Record<string, TdemRegionNumber> = {
  * Merge mapping from the 8 TDEM regions to the 4 TXHSA regions used by the
  * map overlay. Fixed per plan R3.
  */
-export const tdemToTxhsaRegion: Record<TdemRegionNumber, 'West' | 'North' | 'East' | 'South'> = {
+export const tdemToTxhsaRegion: Record<TdemRegionNumber, TxhsaRegionName> = {
   1: 'West', 7: 'West',
   2: 'North', 3: 'North',
   8: 'East', 4: 'East',

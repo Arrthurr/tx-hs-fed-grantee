@@ -67,11 +67,12 @@ test.describe('Texas Head Start Map', () => {
     // Check that the Head Start Programs layer is enabled by default
     await expect(page.locator('button:has-text("Head Start Programs")')).toHaveClass(/bg-headstart-accent/);
     
-    // Toggle the Congressional Districts layer
-    await page.click('button:has-text("Congressional Districts")');
-    
-    // Check that the Congressional Districts layer is now enabled
-    await expect(page.locator('button:has-text("Congressional Districts")')).toHaveClass(/bg-district-accent/);
+    // Toggle the TXHSA Regions layer
+    await page.click('button:has-text("TXHSA Regions")');
+
+    // Check that the TXHSA Regions layer is now enabled
+    // MapControls applies bg-tx-gray-100 to the active txhsaRegions toggle.
+    await expect(page.locator('button:has-text("TXHSA Regions")')).toHaveClass(/bg-tx-gray-100/);
     
     // Toggle the Head Start Programs layer off
     await page.click('button:has-text("Head Start Programs")');

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Map, InfoWindow, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { MapPin, Users, DollarSign, Building2, MapIcon } from 'lucide-react';
 import { useMapData } from '../hooks/useMapData';
-import { HeadStartProgram, TxhsaRegion, TxhsaRegionName } from '../types/maps';
+import type { HeadStartProgram, TxhsaRegion, TxhsaRegionName } from '../types/maps';
 import { formatCurrency } from '../utils/mapHelpers';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
@@ -28,32 +28,36 @@ interface MarkerClickData {
 }
 
 /**
- * Returns the CSS variable for a region's fill / stroke color. Matches the
- * tokens added in U3 (src/styles/design-system.css).
+ * Resolved hex colors for region fill / stroke. Mirrors the CSS variables in
+ * src/styles/design-system.css (--txhsa-{west,north,east,south}). google.maps.Data
+ * does not resolve CSS custom properties at runtime, so we pass literals here
+ * and keep the tokens for Tailwind/CSS consumers.
  */
-const regionFillColor = (name: TxhsaRegionName): string => {
-  switch (name) {
-    case 'West': return 'var(--txhsa-west)';
-    case 'North': return 'var(--txhsa-north)';
-    case 'East': return 'var(--txhsa-east)';
-    case 'South': return 'var(--txhsa-south)';
-  }
+const REGION_FILL_COLORS: Record<TxhsaRegionName, string> = {
+  West: '#d97706',   // amber-600
+  North: '#1d4ed8',  // blue-700
+  East: '#7c3aed',   // violet-600
+  South: '#dc2626',  // red-600
 };
+
+const regionFillColor = (name: TxhsaRegionName): string => REGION_FILL_COLORS[name];
 
 /**
  * Main TexasMap component that renders an interactive Google Map
- * displaying Head Start programs and congressional districts across Texas
+ * displaying Head Start programs and TXHSA region overlays across Texas
  */
 const TexasMap: React.FC<TexasMapProps> = ({ 
   className = "", 
   height = "600px",
   mapId
 }) => {
-  // Get map data from custom hook
+  // Get map data from custom hook. We deliberately ignore `hasErrors` (the
+  // OR of programs + regions errors) here -- regions default OFF and the
+  // overlay is non-essential, so a regions-only failure should not blank
+  // the entire map. Only programsError blocks the map gate below.
   const {
-    programs,
+    headStartPrograms,
     isLoading,
-    hasErrors,
     programsError,
     regionsError,
     retryLoading,
@@ -70,8 +74,11 @@ const TexasMap: React.FC<TexasMapProps> = ({
   const [selectedMarker, setSelectedMarker] = useState<MarkerClickData | null>(null);
   const [infoWindowOpen, setInfoWindowOpen] = useState(false);
 
-  // State for TXHSA region polygon overlays
-  const [regionOverlays, setRegionOverlays] = useState<google.maps.Data[]>([]);
+  // TXHSA region polygon overlays. Held in a ref because they are imperative
+  // Google Maps resources (Data layers) -- not render state. Storing them in
+  // useState caused a teardown/rebuild churn loop via the renderRegionOverlays
+  // useCallback dep chain.
+  const regionOverlaysRef = useRef<google.maps.Data[]>([]);
 
   // State for map loading
   const [mapLoaded, setMapLoaded] = useState(false);
@@ -98,7 +105,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
 
   /**
    * Handle marker click events
-   * Opens info window with program or district details
+   * Opens info window with program or region details
    */
   const handleMarkerClick = useCallback((data: MarkerClickData) => {
     console.log('Marker clicked:', data);
@@ -117,14 +124,27 @@ const TexasMap: React.FC<TexasMapProps> = ({
 
 
   /**
-   * Render the four TXHSA region polygons onto the map. Mirrors the previous
-   * district overlay loader but consumes the already-loaded regions array
-   * (no per-overlay fetch needed) and uses the design-system region colors.
+   * Tear down any existing region overlays. Detaches them from the map and
+   * clears their Maps event listeners to prevent listener accumulation across
+   * toggles.
+   */
+  const teardownRegionOverlays = useCallback(() => {
+    for (const overlay of regionOverlaysRef.current) {
+      overlay.setMap(null);
+      google.maps.event.clearInstanceListeners(overlay);
+    }
+    regionOverlaysRef.current = [];
+  }, []);
+
+  /**
+   * Render the four TXHSA region polygons onto the map. Consumes the
+   * already-loaded regions array (no per-overlay fetch needed) and uses
+   * the design-system region colors.
    */
   const renderRegionOverlays = useCallback(() => {
+    teardownRegionOverlays();
+
     if (!map || !layerVisibility.txhsaRegions || txhsaRegions.length === 0) {
-      regionOverlays.forEach(overlay => overlay.setMap(null));
-      setRegionOverlays([]);
       return;
     }
 
@@ -155,9 +175,8 @@ const TexasMap: React.FC<TexasMapProps> = ({
       newOverlays.push(dataLayer);
     }
 
-    regionOverlays.forEach(overlay => overlay.setMap(null));
-    setRegionOverlays(newOverlays);
-  }, [map, layerVisibility.txhsaRegions, txhsaRegions, handleMarkerClick]);
+    regionOverlaysRef.current = newOverlays;
+  }, [map, layerVisibility.txhsaRegions, txhsaRegions, handleMarkerClick, teardownRegionOverlays]);
 
   /**
    * Mark the map as ready once the map instance and either programs or
@@ -184,9 +203,27 @@ const TexasMap: React.FC<TexasMapProps> = ({
    */
   useEffect(() => {
     return () => {
-      regionOverlays.forEach(overlay => overlay.setMap(null));
+      teardownRegionOverlays();
     };
-  }, [regionOverlays]);
+  }, [teardownRegionOverlays]);
+
+  /**
+   * Translate MapControls' UI-layer names ("programs" / "txhsaRegions") back
+   * to the LayerVisibility keys useMapData owns. Memoized per CLAUDE.md
+   * ("Prefer useCallback for event handlers passed to child components").
+   * Declared above the loading / error early returns so the Rules of Hooks
+   * see this useCallback on every render.
+   */
+  const handleMapControlsToggle = useCallback((layer: 'programs' | 'txhsaRegions') => {
+    switch (layer) {
+      case 'programs':
+        toggleLayer('headStartPrograms');
+        break;
+      case 'txhsaRegions':
+        toggleLayer('txhsaRegions');
+        break;
+    }
+  }, [toggleLayer]);
 
   /**
    * Render program info window content
@@ -310,18 +347,15 @@ const TexasMap: React.FC<TexasMapProps> = ({
     );
   }
 
-  // Show error state if data loading failed
-  if (hasErrors) {
-    const errorMessage = programsError || regionsError || 'Failed to load map data';
-    const errorDetails = programsError && regionsError
-      ? `Programs Error: ${programsError}\n\nRegions Error: ${regionsError}`
-      : undefined;
-
+  // Show error state only when the programs fetch failed -- without programs
+  // there is nothing meaningful to render. A regions-only failure is reported
+  // upstream (App's header / ErrorDisplay) but does not block the map.
+  if (programsError) {
     return (
       <div className="flex items-center justify-center" style={{ height }}>
         <ErrorDisplay
-          error={errorMessage}
-          details={errorDetails}
+          error={programsError}
+          details={regionsError ? `Regions Error: ${regionsError}` : undefined}
           onRetry={retryLoading}
           errorType="data"
         />
@@ -335,17 +369,6 @@ const TexasMap: React.FC<TexasMapProps> = ({
     txhsaRegions: layerVisibility.txhsaRegions
   };
 
-  // Map the toggle function to handle the conversion
-  const handleMapControlsToggle = (layer: 'programs' | 'txhsaRegions') => {
-    switch (layer) {
-      case 'programs':
-        toggleLayer('headStartPrograms');
-        break;
-      case 'txhsaRegions':
-        toggleLayer('txhsaRegions');
-        break;
-    }
-  };
 
   return (
     <div ref={mapContainerRef} className={`relative ${className}`} style={{ height }}>
@@ -353,7 +376,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
       <MapControls
         layerVisibility={mapControlsLayerVisibility}
         onToggleLayer={handleMapControlsToggle}
-        programCount={programs?.length || 0}
+        programCount={headStartPrograms?.length || 0}
         mapContainerRef={mapContainerRef}
       />
 
@@ -371,7 +394,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
         className="w-full h-full"
       >
         {/* Head Start Program Markers */}
-        {layerVisibility.headStartPrograms && programs && programs.map((program) => (
+        {layerVisibility.headStartPrograms && headStartPrograms && headStartPrograms.map((program) => (
           <AdvancedMarker
             key={`program-${program.id}`}
             position={{ lat: program.lat, lng: program.lng }}

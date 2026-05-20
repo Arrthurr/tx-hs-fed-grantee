@@ -110,15 +110,20 @@ export interface HeadStartProgram {
 export type TxhsaRegionName = 'West' | 'North' | 'East' | 'South';
 
 /**
+ * Discriminated polygon geometry (GeoJSON Polygon or MultiPolygon).
+ * Used by region features and the shared point-in-polygon helpers.
+ */
+export type PolygonGeometry =
+  | { type: 'Polygon'; coordinates: number[][][] }
+  | { type: 'MultiPolygon'; coordinates: number[][][][] };
+
+/**
  * GeoJSON feature shape for a single TXHSA region.
  */
 export interface TxhsaRegionFeature {
   type: 'Feature';
   properties: { name: TxhsaRegionName };
-  geometry: {
-    type: 'Polygon' | 'MultiPolygon';
-    coordinates: number[][][] | number[][][][];
-  };
+  geometry: PolygonGeometry;
 }
 
 /**

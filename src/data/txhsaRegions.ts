@@ -30,10 +30,8 @@ export const validateTxhsaRegion = (feature: unknown): feature is TxhsaRegionFea
 const computeCenter = (feature: TxhsaRegionFeature): google.maps.LatLngLiteral => {
   const rings: number[][][] =
     feature.geometry.type === 'Polygon'
-      ? (feature.geometry.coordinates as number[][][])
-      : (feature.geometry.coordinates as number[][][][])
-          .map(poly => poly[0])
-          .filter(Boolean);
+      ? feature.geometry.coordinates
+      : feature.geometry.coordinates.map(poly => poly[0]).filter(Boolean);
 
   // Use the ring with the most vertices as a proxy for "largest landmass".
   let chosen: number[][] | null = null;

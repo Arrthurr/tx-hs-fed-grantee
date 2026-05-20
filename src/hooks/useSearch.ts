@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { HeadStartProgram } from '../types/maps';
+import type { HeadStartProgram } from '../types/maps';
 
 interface SearchOptions {
   includePrograms: boolean;
@@ -16,22 +16,22 @@ interface SearchResults {
  * Search hook for Head Start programs. The previous district / representative
  * search branch was removed in U7 - programs are now the only searchable
  * dimension since the districts overlay no longer exists.
+ *
+ * Options are destructured to primitives at the hook boundary so downstream
+ * useMemo/useCallback deps are stable across renders even when the caller
+ * passes a fresh `options` object literal on every render.
  */
 export const useSearch = (
   allPrograms: HeadStartProgram[],
   options: Partial<SearchOptions> = {}
 ) => {
-  const searchOptions: SearchOptions = {
-    includePrograms: true,
-    minSearchLength: 2,
-    ...options,
-  };
+  const { includePrograms = true, minSearchLength = 2 } = options;
 
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
   const filteredPrograms = useMemo(() => {
-    if (!searchTerm || !searchOptions.includePrograms || searchTerm.length < searchOptions.minSearchLength) {
+    if (!searchTerm || !includePrograms || searchTerm.length < minSearchLength) {
       return allPrograms;
     }
     const term = searchTerm.toLowerCase().trim();
@@ -40,22 +40,22 @@ export const useSearch = (
       program.address.toLowerCase().includes(term) ||
       (program.grantee && program.grantee.toLowerCase().includes(term))
     );
-  }, [searchTerm, allPrograms, searchOptions.includePrograms, searchOptions.minSearchLength]);
+  }, [searchTerm, allPrograms, includePrograms, minSearchLength]);
 
   const searchResults: SearchResults = useMemo(() => {
-    const isActive = searchTerm.length >= searchOptions.minSearchLength;
-    const resultPrograms = isActive && searchOptions.includePrograms ? filteredPrograms : [];
+    const isActive = searchTerm.length >= minSearchLength;
+    const resultPrograms = isActive && includePrograms ? filteredPrograms : [];
     return {
       programs: resultPrograms,
       isSearchActive: isActive,
       totalResults: isActive ? resultPrograms.length : 0,
     };
-  }, [filteredPrograms, searchTerm, searchOptions.minSearchLength, searchOptions.includePrograms]);
+  }, [filteredPrograms, searchTerm, minSearchLength, includePrograms]);
 
   const handleSearchChange = useCallback((value: string) => {
     setSearchTerm(value);
-    setIsSearching(value.length >= searchOptions.minSearchLength);
-  }, [searchOptions.minSearchLength]);
+    setIsSearching(value.length >= minSearchLength);
+  }, [minSearchLength]);
 
   const clearSearch = useCallback(() => {
     setSearchTerm('');
