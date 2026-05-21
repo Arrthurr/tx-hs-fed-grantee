@@ -3,6 +3,7 @@ import { Map, InfoWindow, AdvancedMarker, useMap } from '@vis.gl/react-google-ma
 import { MapPin, Users, DollarSign, Building2, MapIcon } from 'lucide-react';
 import { useMapData } from '../hooks/useMapData';
 import type { HeadStartProgram, TxhsaRegion, TxhsaRegionName } from '../types/maps';
+import { REGION_FUNDED_AMOUNTS } from '../data/txhsaRegions';
 import { formatCurrency } from '../utils/mapHelpers';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
@@ -322,6 +323,8 @@ const TexasMap: React.FC<TexasMapProps> = ({
         ? '1 Head Start / Early Head Start program in this region.'
         : `${count} Head Start / Early Head Start programs in this region.`;
 
+    const fundedAmount = REGION_FUNDED_AMOUNTS[region.name].toLocaleString('en-US');
+
     return (
       <div className="max-w-sm p-4 bg-white rounded-lg shadow-lg">
         <div className="border-b border-gray-200 pb-3 mb-3 flex items-start justify-between">
@@ -334,6 +337,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
           </span>
         </div>
         <p className="text-sm text-gray-700">{countCopy}</p>
+        <p className="text-sm text-gray-700 mt-1">Total funded amount: {fundedAmount}</p>
       </div>
     );
   };

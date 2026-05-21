@@ -305,6 +305,7 @@ describe('TexasMap Component', () => {
       const infoWindow = await screen.findByTestId('info-window');
       expect(infoWindow).toHaveTextContent('South');
       expect(infoWindow).toHaveTextContent('7 Head Start / Early Head Start programs in this region.');
+      expect(infoWindow).toHaveTextContent('Total funded amount: 19,049');
 
       // R11: no representative / party / committee / contact content.
       expect(infoWindow).not.toHaveTextContent(/Representative/i);
@@ -336,6 +337,8 @@ describe('TexasMap Component', () => {
 
       const infoWindow = await screen.findByTestId('info-window');
       expect(infoWindow).toHaveTextContent('1 Head Start / Early Head Start program in this region.');
+      // West region's authored funded amount; proves the line is region-keyed, not a constant string.
+      expect(infoWindow).toHaveTextContent('Total funded amount: 11,857');
     });
 
     test('region info window shows a loading message when counts are not yet computed', async () => {
@@ -360,6 +363,8 @@ describe('TexasMap Component', () => {
       const infoWindow = await screen.findByTestId('info-window');
       expect(infoWindow).toHaveTextContent('North');
       expect(infoWindow).toHaveTextContent(/Loading program count/);
+      // Funded amount is static and renders synchronously, even while counts load.
+      expect(infoWindow).toHaveTextContent('Total funded amount: 12,311');
     });
   });
 });
