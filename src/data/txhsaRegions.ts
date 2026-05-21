@@ -3,6 +3,19 @@ import type { TxhsaRegion, TxhsaRegionFeature, TxhsaRegionName } from '../types/
 export const TXHSA_REGION_NAMES: readonly TxhsaRegionName[] = ['West', 'North', 'East', 'South'] as const;
 
 /**
+ * Total funded amount per TXHSA region. These are authored figures supplied
+ * by the product owner -- not derived from headStartPrograms.json. Future
+ * maintainers should update the values here rather than computing them from
+ * program-level funding data, unless this overlay's source-of-truth changes.
+ */
+export const REGION_FUNDED_AMOUNTS: Record<TxhsaRegionName, number> = {
+  West: 11857,
+  North: 12311,
+  East: 15360,
+  South: 19049,
+};
+
+/**
  * Validate a raw region feature loaded from a region geojson file.
  * Returns true if the feature has the expected shape and a recognized name.
  */
