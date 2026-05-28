@@ -31,7 +31,11 @@
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import union from '@turf/union';
-import { tdemCountyRegions, tdemToTxhsaRegion } from '../src/data/tdemCountyRegions';
+import {
+  tdemCountyRegions,
+  tdemToTxhsaRegion,
+  txhsaCountyOverrides,
+} from '../src/data/tdemCountyRegions';
 import type { Feature, FeatureCollection, Polygon, MultiPolygon } from 'geojson';
 
 type CountyFeature = Feature<Polygon | MultiPolygon, { COUNTY: string; [k: string]: unknown }>;
@@ -48,6 +52,12 @@ export interface BuildOptions {
   sourcePath?: string;
   outputDir?: string;
   countyLookup?: Record<string, 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8>;
+  /**
+   * Per-county TXHSA overrides applied before `tdemToTxhsaRegion`. Lets a
+   * county be assigned to a TXHSA region that does not match its TDEM
+   * region's default mapping.
+   */
+  countyOverrides?: Record<string, TxhsaName>;
   write?: boolean;
   /**
    * When true (the CLI default), throws if any TXHSA region ends up with zero
@@ -68,6 +78,7 @@ export function buildTxhsaRegions(options: BuildOptions = {}): BuildResult {
   const sourcePath = options.sourcePath ?? SOURCE_PATH;
   const outputDir = options.outputDir ?? OUTPUT_DIR;
   const countyLookup = options.countyLookup ?? tdemCountyRegions;
+  const countyOverrides = options.countyOverrides ?? txhsaCountyOverrides;
   const write = options.write ?? true;
   const requireAllRegionsPopulated = options.requireAllRegionsPopulated ?? true;
 
@@ -85,24 +96,40 @@ export function buildTxhsaRegions(options: BuildOptions = {}): BuildResult {
   };
 
   const missing: string[] = [];
+  const seenCounties = new Set<string>();
   for (const feature of raw.features as CountyFeature[]) {
     const rawName = feature.properties?.COUNTY;
     if (!rawName) {
       throw new Error('County feature missing COUNTY property');
     }
     const countyName = rawName.replace(/ County$/, '').trim();
+    seenCounties.add(countyName);
     const tdemRegion = countyLookup[countyName];
     if (!tdemRegion) {
       missing.push(countyName);
       continue;
     }
-    const txhsaName = tdemToTxhsaRegion[tdemRegion];
+    const txhsaName = countyOverrides[countyName] ?? tdemToTxhsaRegion[tdemRegion];
     groups[txhsaName].push(feature);
   }
 
   if (missing.length > 0) {
     throw new Error(
       `Missing TDEM region assignment for counties:\n  ${missing.join('\n  ')}`,
+    );
+  }
+
+  // Fail loud on override keys that match no county in the source. Without
+  // this, a misspelled key (e.g. "LaSalle" vs the source's "La Salle") falls
+  // through `??` to the TDEM default and silently ships the wrong map --
+  // symmetric to the missing-county check above.
+  const unmatchedOverrides = Object.keys(countyOverrides).filter(
+    name => !seenCounties.has(name),
+  );
+  if (unmatchedOverrides.length > 0) {
+    throw new Error(
+      `txhsaCountyOverrides keys match no county in the source: ${unmatchedOverrides.join(', ')}. ` +
+      `Check spelling against the source's COUNTY field (e.g. "La Salle" not "LaSalle").`,
     );
   }
 
