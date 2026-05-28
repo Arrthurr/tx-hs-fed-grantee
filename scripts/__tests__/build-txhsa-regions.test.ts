@@ -46,7 +46,7 @@ describe('buildTxhsaRegions', () => {
 
       const { regions, countyCounts } = buildTxhsaRegions({
         sourcePath, outputDir, countyLookup: lookup, write: true,
-        requireAllRegionsPopulated: false,
+        countyOverrides: {}, requireAllRegionsPopulated: false,
       });
 
       expect(countyCounts).toEqual({ West: 3, North: 1, East: 0, South: 0 });
@@ -83,7 +83,7 @@ describe('buildTxhsaRegions', () => {
       const lookup: Record<string, RegionNum> = { Known: 1 };
 
       expect(() =>
-        buildTxhsaRegions({ sourcePath, outputDir, countyLookup: lookup, write: false }),
+        buildTxhsaRegions({ sourcePath, outputDir, countyLookup: lookup, countyOverrides: {}, write: false }),
       ).toThrow(/Mystery/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -106,7 +106,7 @@ describe('buildTxhsaRegions', () => {
 
       expect(() =>
         buildTxhsaRegions({
-          sourcePath, outputDir, countyLookup: lookup, write: false,
+          sourcePath, outputDir, countyLookup: lookup, countyOverrides: {}, write: false,
           requireAllRegionsPopulated: true,
         }),
       ).toThrow(/North|East|South/);
@@ -146,10 +146,72 @@ describe('buildTxhsaRegions', () => {
       // the script must fail rather than write a corrupted region file.
       expect(() =>
         buildTxhsaRegions({
-          sourcePath, outputDir, countyLookup: lookup, write: false,
+          sourcePath, outputDir, countyLookup: lookup, countyOverrides: {}, write: false,
           requireAllRegionsPopulated: false,
         }),
       ).toThrow();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('applies countyOverrides over the default tdemToTxhsaRegion mapping', () => {
+    const { dir, sourcePath, outputDir } = makeWorkspace();
+    try {
+      // Four counties whose TDEM regions would default-route them to:
+      // A,B,C → North (TDEM 3), D → East (TDEM 4). With no override, that's
+      // 3 North + 1 East. Overriding B → East flips one to East: 2 + 2.
+      const source = {
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', properties: { COUNTY: 'A County' }, geometry: square(0, 0) },
+          { type: 'Feature', properties: { COUNTY: 'B County' }, geometry: square(5, 0) },
+          { type: 'Feature', properties: { COUNTY: 'C County' }, geometry: square(10, 0) },
+          { type: 'Feature', properties: { COUNTY: 'D County' }, geometry: square(15, 0) },
+        ],
+      };
+      writeFileSync(sourcePath, JSON.stringify(source));
+      const lookup: Record<string, RegionNum> = { A: 3, B: 3, C: 3, D: 4 };
+
+      const withoutOverride = buildTxhsaRegions({
+        sourcePath, outputDir, countyLookup: lookup, write: false,
+        requireAllRegionsPopulated: false, countyOverrides: {},
+      });
+      expect(withoutOverride.countyCounts).toEqual({ West: 0, North: 3, East: 1, South: 0 });
+
+      const withOverride = buildTxhsaRegions({
+        sourcePath, outputDir, countyLookup: lookup, write: false,
+        requireAllRegionsPopulated: false,
+        countyOverrides: { B: 'East' },
+      });
+      expect(withOverride.countyCounts).toEqual({ West: 0, North: 2, East: 2, South: 0 });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('throws when a countyOverrides key matches no county in the source', () => {
+    const { dir, sourcePath, outputDir } = makeWorkspace();
+    try {
+      const source = {
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', properties: { COUNTY: 'A County' }, geometry: square(0, 0) },
+          { type: 'Feature', properties: { COUNTY: 'B County' }, geometry: square(5, 0) },
+        ],
+      };
+      writeFileSync(sourcePath, JSON.stringify(source));
+      const lookup: Record<string, RegionNum> = { A: 3, B: 4 };
+
+      // 'Typo' is not a county in the source -- the override is dead and would
+      // silently no-op without the guard.
+      expect(() =>
+        buildTxhsaRegions({
+          sourcePath, outputDir, countyLookup: lookup, write: false,
+          requireAllRegionsPopulated: false,
+          countyOverrides: { Typo: 'East' },
+        }),
+      ).toThrow(/Typo/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
@@ -173,7 +235,7 @@ describe('buildTxhsaRegions', () => {
       const lookup: Record<string, RegionNum> = { A: 1, B: 2, C: 4, D: 5 };
 
       const { countyCounts } = buildTxhsaRegions({
-        sourcePath, outputDir, countyLookup: lookup, write: false,
+        sourcePath, outputDir, countyLookup: lookup, countyOverrides: {}, write: false,
         requireAllRegionsPopulated: false,
       });
 

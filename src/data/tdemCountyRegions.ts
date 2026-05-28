@@ -89,3 +89,25 @@ export const tdemToTxhsaRegion: Record<TdemRegionNumber, TxhsaRegionName> = {
   8: 'East', 4: 'East',
   6: 'South', 5: 'South',
 };
+
+/**
+ * Per-county TXHSA overrides. Entries here bypass `tdemToTxhsaRegion` and
+ * assign the named county directly to a TXHSA region. The county's TDEM
+ * number in `tdemCountyRegions` is left untouched -- TDEM is a factual
+ * upstream source we don't rewrite.
+ *
+ * Use sparingly. Each entry is a deliberate decision to deviate from the
+ * default TDEM-region grouping, and lives in code review so the rationale
+ * is auditable.
+ *
+ * County name spelling must match the same convention used in
+ * `tdemCountyRegions` (the spelling in `scripts/source/tx-counties.geojson`
+ * with " County" stripped).
+ */
+export const txhsaCountyOverrides: Record<string, TxhsaRegionName> = {
+  Shelby: 'East',
+  Nacogdoches: 'East',
+  Polk: 'East',
+  Jefferson: 'East',
+  Orange: 'East',
+};
