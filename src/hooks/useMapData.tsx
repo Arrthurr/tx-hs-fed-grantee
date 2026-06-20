@@ -77,7 +77,6 @@ const useMapDataInternal = () => {
       }
 
       setHeadStartPrograms(transformedPrograms);
-      console.log(`Loaded ${transformedPrograms.length} Head Start programs`);
       programsRetryRef.current = 0;
     } catch (error) {
       // Caller aborted (unmount or component-driven cancel); do not surface
@@ -134,7 +133,6 @@ const useMapDataInternal = () => {
         return processTxhsaRegion(feature);
       }));
       setTxhsaRegions(results);
-      console.log(`Loaded ${results.length} TXHSA regions`);
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
         return;
@@ -199,7 +197,8 @@ const useMapDataInternal = () => {
         unmatched += 1;
         // Surface the R10 invariant violation -- "each program counted in
         // exactly one region" -- so it's visible during development even
-        // when no test exercises the data path that produced it.
+        // when no test exercises the data path that produced it. Terser's
+        // drop_console strips this in production builds (see vite.config.ts).
         console.warn(
           `[useMapData] Program "${program.name}" (id=${program.id}, lat=${program.lat}, lng=${program.lng}) ` +
           `falls outside all TXHSA region polygons; not counted.`,

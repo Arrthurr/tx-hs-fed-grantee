@@ -119,7 +119,6 @@ const TexasMap: React.FC<TexasMapProps> = ({
    * Opens info window with program or region details
    */
   const handleMarkerClick = useCallback((data: MarkerClickData) => {
-    console.log('Marker clicked:', data);
     setSelectedMarker(data);
     setInfoWindowOpen(true);
   }, []);

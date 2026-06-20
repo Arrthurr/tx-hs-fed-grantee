@@ -51,17 +51,6 @@ const AppContent: React.FC = () => {
    * Validate API key configuration on component mount
    */
   useEffect(() => {
-    // Debug logging for development (remove in production)
-    if (import.meta.env.DEV) {
-      console.log('Environment check:', {
-        hasApiKey: !!apiKey,
-        apiKeyLength: apiKey?.length || 0,
-        apiKeyPrefix: apiKey?.substring(0, 10) + '...' || 'undefined',
-        hasMapId: !!mapId,
-        mapId: mapId
-      });
-    }
-
     // Validate API key
     if (!apiKey) {
       setApiError('Google Maps API key is not configured. Please add VITE_GOOGLE_MAPS_API_KEY to your .env.local file.');
@@ -91,7 +80,6 @@ const AppContent: React.FC = () => {
    * Includes an initial delay to allow Google Maps API to fully initialize
    */
   const handleApiLoad = () => {
-    console.log('Google Maps API loaded successfully');
     setApiLoaded(true);
     setApiError(null);
     
@@ -105,11 +93,9 @@ const AppContent: React.FC = () => {
       
       const checkReady = () => {
         if (checkMapsReady()) {
-          console.log('Google Maps constructors are ready and callable');
           setMapsReady(true);
         } else if (retryCount < maxRetries) {
           retryCount++;
-          console.log(`Waiting for Google Maps constructors... (attempt ${retryCount}/${maxRetries})`);
           // Retry checking after a short delay
           setTimeout(checkReady, retryDelay);
         } else {
