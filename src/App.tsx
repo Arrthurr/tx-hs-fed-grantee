@@ -338,8 +338,6 @@ const AppContent: React.FC = () => {
           </footer>
         </main>
         
-        {/* Accessibility Checker (only in development mode) */}
-        {/* <AccessibilityChecker autoRun={false} /> */}
       </div>
   );
 };
