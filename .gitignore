@@ -25,7 +25,6 @@ dist-ssr
 .env
 .env.local
 .env.local.example
-docs
 
 # Compound Engineering local config
 .compound-engineering/*.local.yaml
