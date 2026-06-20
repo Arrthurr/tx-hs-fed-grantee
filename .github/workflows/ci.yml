@@ -1,6 +1,6 @@
-# CI: lint, unit tests, and production build on every pull request and on
-# pushes to main. Prevents regressions (e.g. a failing lint or build) from
-# landing on main.
+# CI: lint, typecheck, unit tests, and production build on every pull request
+# and on pushes to main. Prevents regressions (e.g. a failing lint or build)
+# from landing on main.
 #
 # E2E (Playwright) is intentionally omitted: the suite is currently out of
 # sync with the UI and needs a live Google Maps API key + dev server.
@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   verify:
-    name: lint / test / build
+    name: lint / typecheck / test / build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +37,9 @@ jobs:
 
       - name: Lint
         run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
 
       - name: Unit tests
         run: npm test -- --ci

@@ -39,8 +39,6 @@ export default defineConfig({
   assetsInclude: ['**/*.geojson'],
   // Configure server
   server: {
-    // Enable HTTP/2
-    https: false,
     // Enable compression
     cors: true,
     // Preload assets

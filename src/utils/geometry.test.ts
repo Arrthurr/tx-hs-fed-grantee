@@ -1,4 +1,5 @@
 import { isPointInPolygon, isPointInSinglePolygon, isPointInMultiPolygon } from './geometry';
+import type { PolygonGeometry } from './geometry';
 
 // Coordinates are [lng, lat]. A unit square from (-1,-1) to (1,1).
 const unitSquare: number[][][] = [[
@@ -64,8 +65,11 @@ describe('isPointInPolygon', () => {
   });
 
   it('returns false for unrecognized geometry types', () => {
+    // The fixture is intentionally outside the PolygonGeometry contract
+    // (Polygon | MultiPolygon) to exercise the function's defensive
+    // fall-through branch; cast through unknown to satisfy the type checker.
     expect(
-      isPointInPolygon(0, 0, { type: 'Point', coordinates: [[[0, 0]]] }),
+      isPointInPolygon(0, 0, { type: 'Point', coordinates: [[[0, 0]]] } as unknown as PolygonGeometry),
     ).toBe(false);
   });
 });
