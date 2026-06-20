@@ -99,8 +99,8 @@ docs/
 
 ### File Naming
 - **Components**: PascalCase (e.g., `TexasMap.tsx`, `SearchBar.tsx`)
-- **Hooks**: camelCase with `use` prefix (e.g., `useMapData.ts`, `useSearch.ts`)
-- **Utilities**: camelCase (e.g., `mapHelpers.ts`, `envValidator.ts`)
+- **Hooks**: camelCase with `use` prefix (e.g., `useMapData.tsx`, `useSearch.ts`)
+- **Utilities**: camelCase (e.g., `mapHelpers.ts`, `geometry.ts`)
 - **Types**: camelCase (e.g., `maps.ts`)
 - **Tests**: Match source file with `.test.tsx` or `.test.ts` suffix
 
@@ -174,12 +174,14 @@ npm test -- --coverage                        # With coverage report
 ```
 
 ### E2E Tests (Playwright)
-- Located in `src/e2e/`
-- Test critical user flows (search, layer toggles, map interactions)
-- Run against built application
+- Infrastructure in place (`playwright.config.ts`, scripts, dependency) but
+  **no tests currently checked in** — the previous suite was removed after it
+  drifted from the UI. See `src/e2e/README.md` for what a future suite should
+  cover.
+- CI intentionally omits E2E; see `.github/workflows/ci.yml`.
 
 ```bash
-npm run test:e2e        # Headless mode
+npm run test:e2e        # Headless mode (requires VITE_GOOGLE_MAPS_API_KEY)
 npm run test:e2e:ui     # Interactive UI mode
 ```
 
@@ -195,7 +197,7 @@ Main map component using @vis.gl/react-google-maps.
 
 **Important:** Requires `VITE_GOOGLE_MAPS_API_KEY` in environment.
 
-### useMapData Hook (src/hooks/useMapData.ts)
+### useMapData Hook (src/hooks/useMapData.tsx)
 Central data management for map layers.
 - Fetches and processes Head Start program data
 - Loads the four TXHSA region geojson files in parallel

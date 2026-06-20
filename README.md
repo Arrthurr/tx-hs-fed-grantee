@@ -36,10 +36,7 @@ An interactive map application that visualizes Head Start and Early Head Start F
    - Optionally create a Map ID for custom styling
 
 3. **Configure environment variables**:
-   ```bash
-   cp .env.example .env.local
-   ```
-   Edit `.env.local` and add your API keys:
+   Create a `.env.local` file in the project root:
    ```env
    VITE_GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key_here
    VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
@@ -87,13 +84,14 @@ VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
 ```
 src/
 ├── components/           # React components
-│   ├── TexasMap.tsx     # Main map component
+│   ├── TexasMap.tsx     # Main map component (renders InfoWindow inline)
 │   ├── MapControls.tsx  # Layer toggle controls
-│   ├── InfoWindow.tsx   # Information popups
+│   ├── SearchBar.tsx    # Search input
+│   ├── SearchResults.tsx # Search results display
 │   ├── LoadingSpinner.tsx
 │   └── ErrorDisplay.tsx
 ├── hooks/
-│   ├── useMapData.ts    # Data management hook
+│   ├── useMapData.tsx   # Data management hook
 │   └── useSearch.ts     # Search functionality hook
 ├── data/
 │   ├── headStartPrograms.ts # Program data processing
@@ -169,8 +167,9 @@ npm run test:e2e
 ### TXHSA Regions Layer
 
 - Shows the four TXHSA regions (West / North / East / South) as a single dissolved polygon per region
-- Click a region to see its name and the count of Head Start / Early Head Start programs that fall inside it
+- Click a region to see its name, the count of Head Start / Early Head Start programs that fall inside it, and the total funded amount for the region
 - Counts are computed lazily via point-in-polygon and memoized once both datasets are loaded
+- Funded amounts are authored figures supplied by the product owner (West: 11,857; North: 12,311; East: 15,360; South: 19,049)
 
 ### Layer Controls
 
