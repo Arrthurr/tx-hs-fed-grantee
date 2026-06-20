@@ -26,7 +26,7 @@ const AppContent: React.FC = () => {
   // Get map data and check for data loading errors. Only programsError is
   // treated as a blocking failure here -- a regions-only failure is reported
   // by TexasMap via an inline path and does not gate the API provider.
-  const { programsError, regionsError, retryLoading } = useMapData();
+  const { programsError, regionsError, retryLoading, headStartPrograms } = useMapData();
 
   /**
    * Check if Google Maps API constructors are available and callable
@@ -280,7 +280,7 @@ const AppContent: React.FC = () => {
                   <div className="text-center">
                     <div className="flex items-center justify-center space-x-2">
                       <Building2 className="w-5 h-5 text-headstart-primary" aria-hidden="true" />
-                      <span className="text-xl font-bold text-tx-gray-900">86</span>
+                      <span className="text-xl font-bold text-tx-gray-900">{headStartPrograms.length}</span>
                     </div>
                     <p className="text-xs text-tx-gray-600">Head Start Programs</p>
                   </div>

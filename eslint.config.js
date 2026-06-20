@@ -5,7 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  { ignores: ['dist', 'coverage'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
@@ -23,6 +23,20 @@ export default tseslint.config(
         'warn',
         { allowConstantExport: true },
       ],
+    },
+  },
+  // Test and setup files use Jest mocks: `as any` casts on mock return values,
+  // `require()` to grab mocked modules, and loose `Function` placeholders.
+  // These are standard Jest patterns that trip no-explicit-any /
+  // no-require-imports / no-unsafe-function-type. Relax them for test files
+  // rather than hand-typing throwaway mocks against the full google.maps
+  // surface or littering per-line disables.
+  {
+    files: ['src/setupTests.ts', 'src/**/*.test.ts', 'src/**/*.test.tsx', 'scripts/**/*.test.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
     },
   }
 );
