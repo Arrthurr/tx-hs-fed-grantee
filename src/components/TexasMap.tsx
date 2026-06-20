@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Map, InfoWindow, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { MapPin, Users, DollarSign, Building2, MapIcon } from 'lucide-react';
 import { useMapData } from '../hooks/useMapData';
+import { useSearch } from '../hooks/useSearch';
 import type { HeadStartProgram, TxhsaRegion, TxhsaRegionName } from '../types/maps';
 import { REGION_FUNDED_AMOUNTS } from '../data/txhsaRegions';
 import { formatCurrency } from '../utils/mapHelpers';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
 import MapControls from './MapControls';
+import SearchBar from './SearchBar';
+import SearchResults from './SearchResults';
 
 /**
  * Props interface for the TexasMap component
@@ -68,6 +71,13 @@ const TexasMap: React.FC<TexasMapProps> = ({
     toggleLayer,
   } = useMapData();
 
+  const {
+    searchTerm,
+    searchResults,
+    handleSearchChange,
+    clearSearch,
+  } = useSearch(headStartPrograms);
+
   // Get map instance using the useMap hook
   const map = useMap();
 
@@ -121,6 +131,18 @@ const TexasMap: React.FC<TexasMapProps> = ({
     setInfoWindowOpen(false);
     setSelectedMarker(null);
   }, []);
+
+  const handleSelectSearchResult = useCallback((program: HeadStartProgram) => {
+    handleMarkerClick({
+      program,
+      position: { lat: program.lat, lng: program.lng },
+      type: 'program',
+    });
+    if (map) {
+      map.panTo({ lat: program.lat, lng: program.lng });
+      map.setZoom(12);
+    }
+  }, [handleMarkerClick, map]);
 
 
 
@@ -376,6 +398,24 @@ const TexasMap: React.FC<TexasMapProps> = ({
 
   return (
     <div ref={mapContainerRef} className={`relative ${className}`} style={{ height }}>
+      {/* Search */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] w-[90%] max-w-md">
+        <SearchBar
+          searchTerm={searchTerm}
+          onSearchChange={handleSearchChange}
+          onClear={clearSearch}
+          resultCount={searchResults.totalResults}
+          isSearchActive={searchResults.isSearchActive}
+        />
+        <div className="mt-2">
+          <SearchResults
+            programs={searchResults.programs}
+            isSearchActive={searchResults.isSearchActive}
+            onSelectProgram={handleSelectSearchResult}
+          />
+        </div>
+      </div>
+
       {/* Map Controls */}
       <MapControls
         layerVisibility={mapControlsLayerVisibility}

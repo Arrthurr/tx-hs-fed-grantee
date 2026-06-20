@@ -62,24 +62,20 @@ src/
 │   ├── SearchBar.tsx    # Search input with autocomplete
 │   ├── SearchResults.tsx # Search results display
 │   ├── LoadingSpinner.tsx # Loading state indicator
-│   ├── ErrorDisplay.tsx  # Error boundary and display
-│   ├── ResponsiveWrapper.tsx # Responsive layout wrapper
-│   └── AccessibilityChecker.tsx # Accessibility validation
+│   └── ErrorDisplay.tsx  # Error boundary and display
 │
 ├── hooks/
-│   ├── useMapData.ts    # Map data management, layer visibility, region counts
+│   ├── useMapData.tsx   # Map data management, layer visibility, region counts
 │   └── useSearch.ts     # Search logic for programs
 │
 ├── data/
 │   ├── headStartPrograms.ts # Head Start program data and processing
 │   ├── txhsaRegions.ts      # TXHSA region validation + processing
-│   ├── tdemCountyRegions.ts # County → TDEM region lookup (build-time input)
-│   └── texasLocations.ts    # Texas geographic data
+│   └── tdemCountyRegions.ts # County → TDEM region lookup (build-time input)
 │
 ├── utils/
 │   ├── geometry.ts      # Generic point-in-polygon helpers
-│   ├── mapHelpers.ts    # Map utility functions
-│   └── envValidator.ts  # Environment variable validation
+│   └── mapHelpers.ts    # Map utility functions
 │
 ├── types/
 │   └── maps.ts          # TypeScript type definitions

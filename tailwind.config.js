@@ -99,11 +99,6 @@ export default {
           secondary: 'var(--headstart-secondary)',
           accent: 'var(--headstart-accent)',
         },
-        district: {
-          primary: 'var(--district-primary)',
-          secondary: 'var(--district-secondary)',
-          accent: 'var(--district-accent)',
-        },
         txhsa: {
           west: 'var(--txhsa-west)',
           north: 'var(--txhsa-north)',
