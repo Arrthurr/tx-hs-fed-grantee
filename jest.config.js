@@ -32,7 +32,14 @@ export default {
         lib: ['ES2020', 'DOM', 'DOM.Iterable'],
         skipLibCheck: true,
         types: ['jest', '@testing-library/jest-dom', 'node']
-      }
+      },
+      // Rewrite `import.meta.env` → `__VITE_ENV__` so source files that read
+      // Vite env vars (notably src/App.tsx) compile under CommonJS. The
+      // runtime global is installed by src/setupTests.ts. See
+      // src/jest-transforms/vite-env.ts for the transformer.
+      astTransformers: {
+        before: ['<rootDir>/src/jest-transforms/vite-env.ts'],
+      },
     }]
   },
   moduleNameMapper: {

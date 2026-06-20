@@ -33,6 +33,16 @@ Object.defineProperty(global, 'importMeta', {
   }
 };
 
+// Runtime target for the jest AST transformer in src/jest-transforms/vite-env.ts.
+// Source files read `import.meta.env.VITE_*`; the transformer rewrites that to
+// `__VITE_ENV__.VITE_*` so the code compiles under CommonJS, and tests that
+// need to vary the env (e.g. App.test.tsx API-key validation cases) mutate
+// this object directly.
+(global as any).__VITE_ENV__ = {
+  VITE_GOOGLE_MAPS_API_KEY: 'test-api-key',
+  VITE_GOOGLE_MAPS_MAP_ID: 'test-map-id',
+};
+
 // Mock Google Maps API
 const mockMap = {
   panTo: jest.fn(),
