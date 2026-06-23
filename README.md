@@ -1,208 +1,205 @@
 # Texas Head Start Interactive Map
 
-An interactive map application that visualizes Head Start and Early Head Start Federal Grantee Programs across Texas, along with TXHSA regions. This tool helps policymakers and state officials analyze program distribution.
+Interactive map for exploring Texas Head Start and Early Head Start federal
+grantee programs alongside the four TXHSA regions.
 
-## 🌟 Features
+The app uses Google Maps for the basemap, renders program markers from a
+committed JSON dataset, and overlays TXHSA regions generated from Texas county
+boundaries.
 
-- **Interactive Google Maps Integration**: Smooth, responsive map of Texas with custom styling
-- **Head Start Program Markers**: View all Head Start and Early Head Start program locations across Texas
-- **TXHSA Regions Overlay**: Toggle the four TXHSA regions (West / North / East / South), built by dissolving TDEM-8 disaster regions from Texas counties
-- **Per-region program counts**: Click a region to see how many Head Start / Early Head Start programs fall inside it
-- **Detailed Information Popups**: Click on any program marker to view comprehensive details
-- **Layer Controls**: Easily toggle between different data layers
-- **Responsive Design**: Optimized for desktop and tablet devices
-- **Performance Optimized**: Efficiently handles 80+ program locations and the four region polygons
-- **Accessibility Compliant**: Built with WCAG guidelines in mind
+## Features
 
-## 🚀 Getting Started
+- Texas-centered Google Map with Head Start and Early Head Start program markers
+- Program info windows with name, address, grantee, and funding details when available
+- Search by program name, address, or grantee
+- Toggleable TXHSA Regions overlay for West, North, East, and South
+- Region info windows with program count and authored funded amount
+- Responsive React/Tailwind interface with accessible controls
 
-### Prerequisites
+## Stack
 
-- Node.js 16+ and npm
-- Google Maps API key with Maps JavaScript API enabled
+- React 18 + TypeScript
+- Vite 7
+- Tailwind CSS
+- `@vis.gl/react-google-maps`
+- Google Maps JavaScript API
+- Jest + React Testing Library
+- Playwright infrastructure, with no checked-in E2E tests currently
+- `@turf/union` + `tsx` for build-time region dissolves
 
-### Installation
+## Setup
 
-1. **Clone and install dependencies**:
-   ```bash
-   npm install
-   ```
+Install dependencies:
 
-2. **Set up Google Maps API**:
-   - Visit [Google Cloud Console](https://console.cloud.google.com/google/maps-apis/)
-   - Create a new project or select an existing one
-   - Enable the **Maps JavaScript API**
-   - Create an API key and restrict it to your domain (for production)
-   - Optionally create a Map ID for custom styling
+```bash
+npm install
+```
 
-3. **Configure environment variables**:
-   Create a `.env.local` file in the project root:
-   ```env
-   VITE_GOOGLE_MAPS_API_KEY=your_actual_google_maps_api_key_here
-   VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
-   ```
-
-4. **Start development server**:
-   ```bash
-   npm run dev
-   ```
-
-5. **Build for production**:
-   ```bash
-   npm run build
-   ```
-
-## 🔧 Environment Configuration
-
-### Required Environment Variables
-
-Create a `.env.local` file in your project root with the following:
+Create `.env.local` in the project root:
 
 ```env
-# Google Maps Platform API Key (Required)
-# Get your key from: https://console.cloud.google.com/google/maps-apis/
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
-
-# Google Maps Map ID (Optional)
-# Get your Map ID from: https://console.cloud.google.com/google/maps-apis/
-# Used for custom map styling
-VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
+VITE_GOOGLE_MAPS_MAP_ID=your_optional_map_id_here
 ```
 
-### API Key Setup Instructions
+`VITE_GOOGLE_MAPS_API_KEY` is required for the map to render. The key needs the
+Google Maps JavaScript API enabled. In production, restrict the key to the
+deployed domain.
 
-#### Google Maps API
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable the **Maps JavaScript API**
-4. Create credentials (API key)
-5. Restrict the API key to your domain for security
-6. Optionally create a Map ID for custom styling
+Start the development server:
 
-## 🏗️ Project Structure
-
+```bash
+npm run dev
 ```
+
+Build for production:
+
+```bash
+npm run build
+```
+
+## Commands
+
+```bash
+npm run dev            # Start Vite dev server
+npm run build          # Production build
+npm run build:regions  # Regenerate committed TXHSA region GeoJSON
+npm run preview        # Preview production build
+npm run lint           # ESLint
+npm run typecheck      # TypeScript app + node configs
+npm test               # Jest unit tests
+npm run test:e2e       # Playwright, currently no checked-in tests
+npm run test:e2e:ui    # Playwright UI mode
+```
+
+If Jest fails because Watchman cannot access user-level state in a sandbox, run
+tests with `--watchman=false`:
+
+```bash
+npm test -- --watchman=false
+```
+
+## Project Structure
+
+```text
 src/
-├── components/           # React components
-│   ├── TexasMap.tsx     # Main map component (renders InfoWindow inline)
-│   ├── MapControls.tsx  # Layer toggle controls
-│   ├── SearchBar.tsx    # Search input
-│   ├── SearchResults.tsx # Search results display
-│   ├── LoadingSpinner.tsx
-│   └── ErrorDisplay.tsx
-├── hooks/
-│   ├── useMapData.tsx   # Data management hook
-│   └── useSearch.ts     # Search functionality hook
-├── data/
-│   ├── headStartPrograms.ts # Program data processing
-│   ├── txhsaRegions.ts      # Region validation + processing
-│   └── tdemCountyRegions.ts # TDEM county → region lookup
-├── types/
-│   └── maps.ts          # TypeScript type definitions
-├── utils/
-│   ├── geometry.ts      # Point-in-polygon helpers
-│   └── mapHelpers.ts    # Map utility functions
-├── styles/
-│   └── design-system.css # Custom design system
-└── App.tsx              # Main application component
+  components/     React UI and map components
+  hooks/          useMapData and useSearch
+  data/           Program processing, TXHSA region processing, county lookup
+  utils/          Geometry and map helpers
+  types/          Shared TypeScript types
+  styles/         Design-system CSS
+  e2e/            E2E notes; no checked-in Playwright specs currently
+
+scripts/
+  build-txhsa-regions.ts
+  source/tx-counties.geojson
+
+public/
+  assets/geojson/headStartPrograms.json
+  assets/txhsa-geojson/{west,north,east,south}.geojson
+  images/
+
+docs/
+  brainstorms/
+  plans/
+  solutions/
 ```
 
-## 📊 Data Sources
+## Data
 
-- **Head Start Programs**: Location data for all Head Start and Early Head Start federal grantee programs in Texas
-- **TXHSA Regions**: Four polygons (West / North / East / South) built at repo-build time by dissolving Texas counties grouped by their TDEM region (https://tdem.texas.gov/regions). The dissolve script lives at `scripts/build-txhsa-regions.ts`; the committed lookup at `src/data/tdemCountyRegions.ts` maps each county to its TDEM region.
+### Head Start Programs
 
-To regenerate the region geojson after updating the lookup or the county source:
+Runtime data lives at:
+
+```text
+public/assets/geojson/headStartPrograms.json
+```
+
+The app loads this file through `src/hooks/useMapData.tsx` and processes records
+with helpers in `src/data/headStartPrograms.ts`.
+
+### TXHSA Regions
+
+Runtime region files live at:
+
+```text
+public/assets/txhsa-geojson/west.geojson
+public/assets/txhsa-geojson/north.geojson
+public/assets/txhsa-geojson/east.geojson
+public/assets/txhsa-geojson/south.geojson
+```
+
+These files are generated by:
+
+```text
+scripts/build-txhsa-regions.ts
+```
+
+Inputs:
+
+- `scripts/source/tx-counties.geojson` - build-only Texas county boundaries
+- `src/data/tdemCountyRegions.ts` - county -> TDEM lookup, TDEM -> TXHSA merge mapping, and TXHSA county overrides
+
+Regenerate region files after changing the county source, TDEM lookup, merge
+mapping, or override map:
 
 ```bash
 npm run build:regions
 ```
 
-## 🎨 Design Features
+## TXHSA Region Membership
 
-- **Texas-Themed Color Palette**: Professional blue and orange color scheme
-- **Distinct Region Hues**: Amber, blue, violet, and red - each WCAG-AA compliant against the basemap
-- **Intuitive Layer Controls**: Easy-to-use toggles for different data layers
-- **Informative Popups**: Well-designed information windows
-- **Responsive Layout**: Adapts to different screen sizes
-- **Accessible Design**: High-contrast colors and keyboard navigation support
+Region membership is county-level. A program is counted in a TXHSA region based
+on the county polygon containing its coordinates.
 
-## 🛠️ Technologies Used
+The region build has three layers:
 
-- **React 18**: Modern React with hooks and functional components
-- **TypeScript**: Full type safety and excellent developer experience
-- **@vis.gl/react-google-maps**: Modern React Google Maps integration
-- **Google Maps API**: Industry-standard mapping service
-- **Tailwind CSS**: Utility-first CSS framework
-- **Vite**: Fast, modern build tool
-- **Lucide React**: Beautiful, customizable icons
-- **@turf/union**: Topology-aware geometry dissolve (build-time only)
+1. `tdemCountyRegions` records the factual county -> TDEM region number.
+2. `tdemToTxhsaRegion` maps the eight TDEM regions into West, North, East, and South.
+3. `txhsaCountyOverrides` assigns specific counties directly to a TXHSA region when the TXHSA overlay intentionally differs from the broad TDEM mapping.
 
-## 🧪 Testing
+Do not rewrite a county's TDEM number to force a TXHSA overlay change. Use
+`txhsaCountyOverrides` for deliberate county-level exceptions, then regenerate
+the GeoJSON.
 
-The application includes comprehensive test coverage:
+The build script fails if:
+
+- A county in `scripts/source/tx-counties.geojson` is missing from `tdemCountyRegions`.
+- A key in `txhsaCountyOverrides` does not match a county in the source.
+- A real build leaves any of the four TXHSA regions empty.
+
+## Testing
+
+Run all Jest tests:
 
 ```bash
-# Run all tests
 npm test
-
-# Run specific test file
-npm test -- src/components/TexasMap.test.tsx
-
-# Run end-to-end tests
-npm run test:e2e
 ```
 
-## 🔍 Key Features in Detail
+Run focused region tests:
 
-### Head Start Programs Layer
+```bash
+npm test -- --watchman=false scripts/__tests__/build-txhsa-regions.test.ts src/hooks/useMapData.test.ts
+```
 
-- Displays all Head Start and Early Head Start program locations
-- Provides detailed information on each program including:
-  - Program name
-  - Full address
-  - Grantee organization
-  - Annual funding amount (when available)
+Run typecheck, lint, and production build:
 
-### TXHSA Regions Layer
+```bash
+npm run typecheck
+npm run lint
+npm run build
+```
 
-- Shows the four TXHSA regions (West / North / East / South) as a single dissolved polygon per region
-- Click a region to see its name, the count of Head Start / Early Head Start programs that fall inside it, and the total funded amount for the region
-- Counts are computed lazily via point-in-polygon and memoized once both datasets are loaded
-- Funded amounts are authored figures supplied by the product owner (West: 11,857; North: 12,311; East: 15,360; South: 19,049)
+Playwright infrastructure is present, but no E2E specs are checked in. See
+`src/e2e/README.md` before adding a new suite.
 
-### Layer Controls
+## Development Notes
 
-- Toggle Head Start Programs visibility
-- Toggle TXHSA Regions visibility
-- Clear visual indicators of current layer state
-
-### Search Functionality
-
-- Search for programs by name, address, or grantee
-- Results display with count
-- Map automatically centers on selected search result
-
-## 📱 Browser Support
-
-- Chrome 90+
-- Firefox 88+
-- Safari 14+
-- Edge 90+
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes with proper TypeScript types
-4. Add detailed comments for complex logic
-5. Test on multiple devices and browsers
-6. Submit a pull request
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
-Built with ❤️ for Texas Head Start program analysis and policy planning.
+- TXHSA Regions are off by default; Head Start program markers are on by default.
+- Region GeoJSON may be `Polygon` or `MultiPolygon`; the runtime handles both.
+- Large generated GeoJSON diffs are best reviewed through source changes plus
+  build/test output rather than line-by-line coordinate inspection.
+- `src/hooks/useMapData.test.ts` may emit existing React `act(...)` warnings
+  while still passing.
+- Keep `.env.local` out of git.
