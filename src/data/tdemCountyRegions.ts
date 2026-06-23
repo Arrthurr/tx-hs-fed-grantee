@@ -105,9 +105,13 @@ export const tdemToTxhsaRegion: Record<TdemRegionNumber, TxhsaRegionName> = {
  * with " County" stripped).
  */
 export const txhsaCountyOverrides: Record<string, TxhsaRegionName> = {
+  Houston: 'East',
   Shelby: 'East',
   Nacogdoches: 'East',
   Polk: 'East',
+  'San Jacinto': 'East',
+  Smith: 'East',
+  Trinity: 'East',
   Jefferson: 'East',
   Orange: 'East',
 };
