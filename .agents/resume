@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Dependencies are restored from the setup snapshot; do not reinstall on wake.
+# This app has no databases, tunnels, or authentication to reconnect.
+echo 'Orb ready; Google Maps rendering requires VITE_GOOGLE_MAPS_API_KEY.'

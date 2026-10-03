@@ -58,6 +58,25 @@ Build for production:
 npm run build
 ```
 
+### Amp orbs
+
+`.agents/setup` prepares dependencies for Amp's reusable project snapshot. It
+uses a supported preinstalled Node toolchain or installs Node 22.22.0 when
+needed, then installs from `package-lock.json` without deleting restored
+`node_modules`. A changed lockfile fails setup rather than silently updating it.
+`.agents/resume` does not reinstall dependencies on wake.
+
+No database or user authentication is required for setup. Configure
+`VITE_GOOGLE_MAPS_API_KEY` (and optionally `VITE_GOOGLE_MAPS_MAP_ID`) through
+Amp project secrets/environment or a local `.env.local`; setup never writes
+credentials. Unit tests and builds do not require a Maps key.
+Playwright browsers are not installed because no E2E tests are checked in.
+
+These lifecycle files must reach the project's default branch before new orbs
+use them. Exact snapshots skip setup; stale snapshots rerun the fast install
+against the updated lockfile. To verify locally, run `.agents/setup` twice and
+then `.agents/resume`.
+
 ## Commands
 
 ```bash

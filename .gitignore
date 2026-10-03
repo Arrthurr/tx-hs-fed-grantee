@@ -33,3 +33,6 @@ test-results
 
 # Compound Engineering local config
 .compound-engineering/*.local.yaml
+
+# Thread-specific orb portal metadata
+.amp/portals/*

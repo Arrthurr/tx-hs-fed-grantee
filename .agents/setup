@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+started=$SECONDS
+
+# Vite 7 requires Node 20.19+ or 22.12+. Prefer the orb's ready toolchain;
+# bootstrap the CI's Node 22 line only when no supported toolchain is present.
+if ! command -v npm >/dev/null || ! command -v node >/dev/null ||
+  ! node -e 'const [major, minor] = process.versions.node.split(".").map(Number); process.exit(major > 22 || (major === 22 && minor >= 12) ? 0 : 1)'; then
+  echo 'Installing Node 22.22.0'
+  if ! command -v curl >/dev/null || ! command -v xz >/dev/null; then
+    sudo apt-get update
+    sudo apt-get install -y curl xz-utils ca-certificates
+  fi
+  case "$(uname -m)" in
+    x86_64) arch=x64 ;;
+    aarch64) arch=arm64 ;;
+    *) echo 'Unsupported Node architecture' >&2; exit 1 ;;
+  esac
+  archive="node-v22.22.0-linux-${arch}.tar.xz"
+  temporary=$(mktemp -d)
+  trap 'rm -rf "$temporary"' EXIT
+  curl --fail --silent --show-error --location "https://nodejs.org/dist/v22.22.0/$archive" -o "$temporary/$archive"
+  curl --fail --silent --show-error --location https://nodejs.org/dist/v22.22.0/SHASUMS256.txt -o "$temporary/SHASUMS256.txt"
+  (cd "$temporary"; grep " $archive$" SHASUMS256.txt | sha256sum --check -)
+  sudo tar -xJf "$temporary/$archive" -C /usr/local --strip-components=1
+fi
+
+echo "Toolchain: $(node --version), npm $(npm --version)"
+echo 'Installing locked dependencies (reusing restored node_modules and npm cache)'
+# npm install is fast on restored snapshots; reject any lockfile drift.
+# Unlike npm ci, it does not delete and reinstall an already current tree.
+lock_before=$(sha256sum package-lock.json)
+npm install --no-audit --no-fund --include=dev
+if [[ "$lock_before" != "$(sha256sum package-lock.json)" ]]; then
+  echo 'Setup changed package-lock.json; reconcile and commit the lockfile before retrying.' >&2
+  exit 1
+fi
+echo "Orb setup finished in $((SECONDS - started)) seconds"
