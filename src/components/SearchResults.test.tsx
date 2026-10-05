@@ -110,6 +110,22 @@ describe('SearchResults Component', () => {
     expect(screen.getByText('EHS')).toBeInTheDocument();
   });
 
+  test('does not label an unknown program type as EHS', () => {
+    render(
+      <SearchResults programs={[{ ...mockPrograms[1], type: 'unknown', grantee: undefined }]} isSearchActive onSelectProgram={onSelectProgram} />
+    );
+    expect(screen.getByText('Unverified')).toBeInTheDocument();
+    expect(screen.queryByText('EHS')).not.toBeInTheDocument();
+  });
+
+  test('shows combined classification without forcing it into EHS', () => {
+    render(
+      <SearchResults programs={[{ ...mockPrograms[1], type: 'both' }]} isSearchActive onSelectProgram={onSelectProgram} />
+    );
+    expect(screen.getByText('HS + EHS')).toBeInTheDocument();
+    expect(screen.queryByText('EHS')).not.toBeInTheDocument();
+  });
+
   test('calls onSelectProgram with the correct program when a result is clicked', () => {
     render(
       <SearchResults programs={mockPrograms} isSearchActive onSelectProgram={onSelectProgram} />

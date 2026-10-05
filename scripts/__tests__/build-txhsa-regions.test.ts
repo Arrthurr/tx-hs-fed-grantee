@@ -26,6 +26,23 @@ function makeWorkspace() {
 }
 
 describe('buildTxhsaRegions', () => {
+  it.each(['duplicate', 'invalid geometry'])('rejects %s county inputs', issue => {
+    const { dir, sourcePath } = makeWorkspace();
+    try {
+      const feature = { type: 'Feature', properties: { COUNTY: 'A County' }, geometry: square(0, 0) };
+      const features = issue === 'duplicate'
+        ? [feature, feature]
+        : [{ ...feature, geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1]]] } }];
+      writeFileSync(sourcePath, JSON.stringify({ type: 'FeatureCollection', features }));
+      expect(() => buildTxhsaRegions({
+        sourcePath, countyLookup: { A: 1 }, countyOverrides: {},
+        write: false, requireAllRegionsPopulated: false,
+      })).toThrow(issue === 'duplicate' ? /Duplicate county: A/ : /Invalid county geometry: A/);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
   it('dissolves adjacent counties in the same region and assigns names', () => {
     const { dir, sourcePath, outputDir } = makeWorkspace();
     try {

@@ -1,7 +1,13 @@
 # Texas Head Start Interactive Map
 
-Interactive map for exploring Texas Head Start and Early Head Start federal
-grantee programs alongside the four TXHSA regions.
+An exploratory map of an owner-supplied Head Start location directory and
+project-defined TXHSA regions. Upstream provenance, reporting date,
+classifications and grantees are unverified; this is not an authoritative policy
+or funding-analysis tool. See [data provenance and limitations](public/data-provenance.md).
+
+Data trust work tracks [GitHub issue #11](https://github.com/Arrthurr/tx-hs-fed-grantee/issues/11).
+Its acceptance criteria are mapped in the provenance document: sourced fields
+or explicit unknowns, reproducible counts and no unsupported analysis claims.
 
 The app uses Google Maps for the basemap, renders program markers from a
 committed JSON dataset, and overlays TXHSA regions generated from Texas county
@@ -9,11 +15,11 @@ boundaries.
 
 ## Features
 
-- Texas-centered Google Map with Head Start and Early Head Start program markers
-- Program info windows with name, address, grantee, and funding details when available
-- Search by program name, address, or grantee
+- Texas-centered Google Map with distinct listed location markers, not a statewide census
+- Location info windows with name, address, coordinates, and explicit unverified fields
+- Search by location name, address, or a sourced grantee when available
 - Toggleable TXHSA Regions overlay for West, North, East, and South
-- Region info windows with program count and authored funded amount
+- Region info windows with distinct listed location counts; unsourced funding withheld
 - Responsive React/Tailwind interface with accessible controls
 
 ## Stack
@@ -83,6 +89,7 @@ then `.agents/resume`.
 npm run dev            # Start Vite dev server
 npm run build          # Production build
 npm run build:regions  # Regenerate committed TXHSA region GeoJSON
+npm run test:data      # Check committed data and deterministic region generation
 npm run preview        # Preview production build
 npm run lint           # ESLint
 npm run typecheck      # TypeScript app + node configs
@@ -129,6 +136,15 @@ docs/
 
 ### Head Start Programs
 
+The supplied source has 86 legacy rows and 85 distinct name/address/coordinate
+tuples after exact deduplication. Type, grantee and funding are not inferred.
+The owner identifies the runtime JSON as the original source.
+[Snapshot metadata](public/assets/geojson/headStartPrograms.metadata.json)
+records its checksum, ownership, duplicate audit and explicit missing
+reporting/acquisition dates and geocoding provenance. Funding documents are
+unavailable, so figures are withheld. See
+[the data contract and refresh requirements](public/data-provenance.md).
+
 Runtime data lives at:
 
 ```text
@@ -165,12 +181,17 @@ mapping, or override map:
 
 ```bash
 npm run build:regions
+npm run test:data
 ```
 
 ## TXHSA Region Membership
 
-Region membership is county-level. A program is counted in a TXHSA region based
-on the county polygon containing its coordinates.
+Region membership is county-level. A listed location is counted in a
+project-defined TXHSA region based on the generated geometry containing its
+coordinates. Counts respect polygon holes and are withheld if any location
+matches zero or multiple regions; shared boundary locations require an explicit
+decision. Unsourced funding figures remain withheld until measure, units,
+period, source and methodology are confirmed.
 
 The region build has three layers:
 
@@ -194,6 +215,12 @@ Run all Jest tests:
 
 ```bash
 npm test
+```
+
+Validate committed data, metadata and deterministic region generation (also in CI):
+
+```bash
+npm run test:data
 ```
 
 Run focused region tests:

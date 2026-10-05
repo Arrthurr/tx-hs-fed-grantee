@@ -1,5 +1,4 @@
 import {
-  REGION_FUNDED_AMOUNTS,
   TXHSA_REGION_NAMES,
   processTxhsaRegion,
   validateTxhsaRegion,
@@ -20,26 +19,6 @@ const validWestFeature: TxhsaRegionFeature = {
 describe('TXHSA_REGION_NAMES', () => {
   it('contains exactly the four expected region names', () => {
     expect([...TXHSA_REGION_NAMES]).toEqual(['West', 'North', 'East', 'South']);
-  });
-});
-
-describe('REGION_FUNDED_AMOUNTS', () => {
-  it('contains the authored funded amount for every region', () => {
-    expect(REGION_FUNDED_AMOUNTS).toEqual({
-      West: 11857,
-      North: 12311,
-      East: 15360,
-      South: 19049,
-    });
-  });
-
-  it('has one entry per name in TXHSA_REGION_NAMES', () => {
-    for (const name of TXHSA_REGION_NAMES) {
-      expect(typeof REGION_FUNDED_AMOUNTS[name]).toBe('number');
-    }
-    expect(Object.keys(REGION_FUNDED_AMOUNTS).sort()).toEqual(
-      [...TXHSA_REGION_NAMES].sort(),
-    );
   });
 });
 

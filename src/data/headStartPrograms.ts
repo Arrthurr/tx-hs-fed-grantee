@@ -10,26 +10,79 @@ export interface RawHeadStartProgram {
     lat: number;
     lng: number;
   };
+  type?: HeadStartProgram['type'];
+  grantee?: string;
+  source?: HeadStartProgram['source'];
 }
+
+const validateRawHeadStartProgram = (raw: unknown): raw is RawHeadStartProgram => {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return false;
+  const row = raw as Record<string, unknown>;
+  if (typeof row.name !== 'string' || !row.name.trim() ||
+      typeof row.address !== 'string' || !row.address.trim()) return false;
+  if (!row.coordinates || typeof row.coordinates !== 'object' || Array.isArray(row.coordinates)) return false;
+  const coordinates = row.coordinates as Record<string, unknown>;
+  if (typeof coordinates.lat !== 'number' || !Number.isFinite(coordinates.lat) ||
+      typeof coordinates.lng !== 'number' || !Number.isFinite(coordinates.lng) ||
+      !isWithinTexasBounds(coordinates.lat, coordinates.lng)) return false;
+  if (row.type !== undefined && !['head-start', 'early-head-start', 'both', 'unknown'].includes(row.type as string)) return false;
+  if (row.grantee !== undefined && (typeof row.grantee !== 'string' || !row.grantee.trim())) return false;
+  if (row.source !== undefined) {
+    if (!row.source || typeof row.source !== 'object' || Array.isArray(row.source)) return false;
+    const source = row.source as Record<string, unknown>;
+    if (typeof source.reference !== 'string' || !source.reference.trim()) return false;
+    if (source.asOf !== null && (typeof source.asOf !== 'string' ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(source.asOf) || !Number.isFinite(Date.parse(source.asOf)) ||
+        new Date(source.asOf).toISOString().slice(0, 10) !== source.asOf)) return false;
+  }
+  // Do not accept factual classification/grantee additions without a citation.
+  return !((row.type !== undefined && row.type !== 'unknown') || row.grantee !== undefined) || row.source !== undefined;
+};
 
 /**
  * Process and validate Head Start program data
  * @param rawData - Raw program data from GeoJSON
  * @returns Processed HeadStartProgram array
  */
-export const processHeadStartPrograms = (rawData: RawHeadStartProgram[]): HeadStartProgram[] => {
+export const processHeadStartPrograms = (rawData: unknown): HeadStartProgram[] => {
+  if (!Array.isArray(rawData)) throw new Error('Invalid program dataset: expected an array');
+  const seen = new Map<string, HeadStartProgram>();
   return rawData
-    .map((program, index) => ({
-      id: `program-${index}`,
-      name: program.name.trim(),
-      address: program.address.trim(),
-      lat: program.coordinates.lat,
-      lng: program.coordinates.lng,
-      type: 'head-start' as const, // Default type, could be enhanced with actual data
-      grantee: program.name.trim(), // Use program name as grantee for now
-      funding: undefined // Will be added when funding data is available
-    }))
-    .filter(validateHeadStartProgram);
+    .map((program: unknown, index): HeadStartProgram => {
+      // Fail the dataset explicitly instead of silently changing displayed totals.
+      if (!validateRawHeadStartProgram(program)) {
+        throw new Error(`Invalid program record at index ${index}: expected non-empty name/address, finite Texas coordinates and cited optional metadata`);
+      }
+      return {
+        // Source-backed tuple identity, not a federal grant/recipient ID.
+        // Includes address AND coordinates; independent of array order.
+        id: `legacy-location:${JSON.stringify([
+          program.name.trim(), program.address.trim(),
+          program.coordinates.lat, program.coordinates.lng,
+        ])}`,
+        name: program.name.trim(),
+        address: program.address.trim(),
+        lat: program.coordinates.lat,
+        lng: program.coordinates.lng,
+        type: program.type ?? 'unknown',
+        grantee: program.grantee?.trim(),
+        source: program.source && { reference: program.source.reference.trim(), asOf: program.source.asOf },
+        funding: undefined,
+      };
+    })
+    .filter(program => {
+      const existing = seen.get(program.id);
+      if (existing) {
+        if (existing.type !== program.type || existing.grantee !== program.grantee ||
+            existing.source?.reference !== program.source?.reference ||
+            existing.source?.asOf !== program.source?.asOf) {
+          throw new Error(`Conflicting metadata for location ${program.id}`);
+        }
+        return false;
+      }
+      seen.set(program.id, program);
+      return true;
+    });
 };
 
 /**
@@ -115,8 +168,9 @@ export const sortHeadStartProgramsByName = (programs: HeadStartProgram[]): HeadS
  * @param type - Program type to filter by
  * @returns Filtered programs array
  */
-export const getHeadStartProgramsByType = (programs: HeadStartProgram[], type: 'head-start' | 'early-head-start'): HeadStartProgram[] => {
-  return programs.filter(program => program.type === type);
+export const getHeadStartProgramsByType = (programs: HeadStartProgram[], type: HeadStartProgram['type']): HeadStartProgram[] => {
+  return programs.filter(program => program.type === type ||
+    (program.type === 'both' && (type === 'head-start' || type === 'early-head-start')));
 };
 
 /**
@@ -166,8 +220,9 @@ export const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2
  */
 export const getHeadStartProgramStats = (programs: HeadStartProgram[]) => {
   const total = programs.length;
-  const headStartCount = programs.filter(p => p.type === 'head-start').length;
-  const earlyHeadStartCount = programs.filter(p => p.type === 'early-head-start').length;
+  // Combined locations participate in both categories, but total counts locations once.
+  const headStartCount = programs.filter(p => p.type === 'head-start' || p.type === 'both').length;
+  const earlyHeadStartCount = programs.filter(p => p.type === 'early-head-start' || p.type === 'both').length;
   
   // Calculate geographic bounds
   const lats = programs.map(p => p.lat);
@@ -202,4 +257,4 @@ export const formatFunding = (funding?: number): string => {
     minimumFractionDigits: 0,
     maximumFractionDigits: 0
   }).format(funding);
-}; 
+};

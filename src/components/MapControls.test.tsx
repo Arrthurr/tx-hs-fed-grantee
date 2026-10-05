@@ -30,7 +30,7 @@ describe('MapControls Component', () => {
 
   test('displays correct program count', () => {
     render(<MapControls {...mockProps} />);
-    expect(screen.getByText('85 programs across Texas')).toBeInTheDocument();
+    expect(screen.getByText('85 listed locations')).toBeInTheDocument();
   });
 
   test('calls onToggleLayer with correct layer when Head Start Programs button is clicked', () => {

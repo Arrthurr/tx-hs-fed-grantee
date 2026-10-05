@@ -108,6 +108,18 @@ describe('useMapData Hook', () => {
     expect(result.current.headStartPrograms[0].name).toBe(mockHeadStartProgramsData[0].name);
   });
 
+  test('reports malformed raw records instead of publishing partial counts', async () => {
+    const originalFetch = (global.fetch as jest.Mock).getMockImplementation()!;
+    (global.fetch as jest.Mock).mockImplementation((url: string) => url.includes('headStartPrograms.json')
+      ? Promise.resolve({ ok: true, json: () => Promise.resolve([mockHeadStartProgramsData[0], { name: 42 }]) })
+      : originalFetch(url));
+    const { result } = renderHook(() => useMapData());
+    await waitFor(() => expect(result.current.isLoadingPrograms).toBe(false));
+    expect(result.current.programsError).toContain('Invalid program record at index 1');
+    expect(result.current.headStartPrograms).toEqual([]);
+    expect(result.current.regionProgramCounts).toBeNull();
+  });
+
   test('handles fetch errors for Head Start programs', async () => {
     (global.fetch as jest.Mock).mockImplementation((url: string) => {
       if (url.includes('headStartPrograms.json')) {
@@ -199,6 +211,33 @@ describe('useMapData Hook', () => {
         expect(Number.isInteger(counts[name])).toBe(true);
         expect(counts[name]).toBeGreaterThanOrEqual(0);
       }
+      expect(counts).toEqual({ West: 0, North: 1, East: 0, South: 1 });
+    });
+
+    test.each(['overlap', 'unmatched', 'shared boundary'])('withholds all counts for %s locations', async scenario => {
+      const originalFetch = (global.fetch as jest.Mock).getMockImplementation()!;
+      (global.fetch as jest.Mock).mockImplementation((url: string) => {
+        if (scenario === 'shared boundary' && url.includes('headStartPrograms.json')) {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve([
+            { ...mockHeadStartProgramsData[0], coordinates: { lat: 31, lng: -99 } },
+          ]) });
+        }
+        if (url.includes('txhsa-geojson/north.geojson') && scenario === 'unmatched') {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixture('North', -104, 32)) });
+        }
+        if (url.includes('txhsa-geojson/west.geojson') && scenario === 'overlap') {
+          return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixture('West', -99, 30)) });
+        }
+        return originalFetch(url);
+      });
+      const { result } = renderHook(() => useMapData());
+      await waitFor(() => {
+        expect(result.current.isLoadingPrograms).toBe(false);
+        expect(result.current.isLoadingRegions).toBe(false);
+      });
+      expect(result.current.txhsaRegions).toHaveLength(4);
+      expect(result.current.headStartPrograms.length).toBeGreaterThan(0);
+      expect(result.current.regionProgramCounts).toBeNull();
     });
 
     test('reports regionsError when a region payload is malformed (HTTP 200, bad shape)', async () => {

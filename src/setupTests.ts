@@ -234,31 +234,10 @@ jest.mock('./data/headStartPrograms', () => ({
     // Texas approximate bounds
     return lat >= 25.8 && lat <= 36.5 && lng >= -106.6 && lng <= -93.5;
   },
-  processHeadStartPrograms: (rawData: any[]) => {
-    return rawData
-      .map((program, index) => ({
-        id: `program-${index}`,
-        name: program.name?.trim() || '',
-        address: program.address?.trim() || '',
-        lat: program.coordinates?.lat || 0,
-        lng: program.coordinates?.lng || 0,
-        type: 'head-start' as const,
-        grantee: program.name?.trim() || '',
-        funding: undefined
-      }))
-      .filter((program: any) => 
-        program.name && program.address && program.id &&
-        typeof program.lat === 'number' && typeof program.lng === 'number' &&
-        program.lat >= 25.8 && program.lat <= 36.5 && 
-        program.lng >= -106.6 && program.lng <= -93.5
-      );
-  },
-  validateHeadStartProgram: (program: any) => {
-    if (!program.name || !program.address || !program.id) return false;
-    if (typeof program.lat !== 'number' || typeof program.lng !== 'number') return false;
-    return program.lat >= 25.8 && program.lat <= 36.5 && 
-           program.lng >= -106.6 && program.lng <= -93.5;
-  },
+  // Integrity tests and hook tests must execute the production processor,
+  // not an imitation that can hide identity and metadata regressions.
+  processHeadStartPrograms: jest.requireActual('./data/headStartPrograms').processHeadStartPrograms,
+  validateHeadStartProgram: jest.requireActual('./data/headStartPrograms').validateHeadStartProgram,
   getHeadStartProgramStats: (programs: any[]) => {
     if (programs.length === 0) {
       return {

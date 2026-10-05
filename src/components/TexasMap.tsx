@@ -4,7 +4,6 @@ import { MapPin, Users, DollarSign, Building2, MapIcon } from 'lucide-react';
 import { useMapData } from '../hooks/useMapData';
 import { useSearch } from '../hooks/useSearch';
 import type { HeadStartProgram, TxhsaRegion, TxhsaRegionName } from '../types/maps';
-import { REGION_FUNDED_AMOUNTS } from '../data/txhsaRegions';
 import { formatCurrency } from '../utils/mapHelpers';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
@@ -285,25 +284,23 @@ const TexasMap: React.FC<TexasMapProps> = ({
               Program Type
             </span>
             <span className="text-sm font-bold text-blue-900 capitalize">
-              {program.type.replace('-', ' ')}
+              {program.type === 'unknown' ? 'Not verified' : program.type === 'both' ? 'Head Start + Early Head Start' : program.type.replace(/-/g, ' ')}
             </span>
           </div>
         </div>
 
         {/* Grantee Information */}
-        {program.grantee && (
-          <div className="bg-purple-50 rounded-lg p-3">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-purple-800 flex items-center">
-                <Building2 className="w-3 h-3 mr-1" aria-hidden="true" />
-                Grantee Organization
-              </span>
-            </div>
-            <div className="text-sm font-medium text-purple-900">
-              {program.grantee}
-            </div>
+        <div className="bg-purple-50 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-purple-800 flex items-center">
+              <Building2 className="w-3 h-3 mr-1" aria-hidden="true" />
+              Grantee Organization
+            </span>
           </div>
-        )}
+          <div className="text-sm font-medium text-purple-900">
+            {program.grantee ?? 'Not verified'}
+          </div>
+        </div>
 
         {/* Funding Information */}
         {program.funding && (
@@ -322,6 +319,13 @@ const TexasMap: React.FC<TexasMapProps> = ({
 
         {/* Location Information */}
         <div className="border-t border-gray-100 pt-3">
+          <p className="text-xs text-gray-600 mb-2">Legacy location record. Location reporting date and geocoding source are not verified.</p>
+          {program.source && (
+            <p className="text-xs text-gray-600 mb-2 break-words">
+              Classification/grantee source: {program.source.reference}. As of: {program.source.asOf ?? 'Unknown'}.
+            </p>
+          )}
+          <a className="text-xs text-blue-700 underline" href="/data-provenance.md" target="_blank" rel="noreferrer">Data provenance and limitations</a>
           <h4 className="text-xs font-medium text-gray-700 mb-2">Location</h4>
           <div className="text-xs text-gray-600">
             <div>Latitude: {program.lat.toFixed(4)}</div>
@@ -339,12 +343,10 @@ const TexasMap: React.FC<TexasMapProps> = ({
   const renderRegionInfoWindow = (region: TxhsaRegion) => {
     const count = regionProgramCounts?.[region.name];
     const countCopy = count == null
-      ? 'Loading program count…'
+      ? 'Location count unavailable until data integrity checks pass.'
       : count === 1
-        ? '1 Head Start / Early Head Start program in this region.'
-        : `${count} Head Start / Early Head Start programs in this region.`;
-
-    const fundedAmount = REGION_FUNDED_AMOUNTS[region.name].toLocaleString('en-US');
+        ? '1 listed location in this region.'
+        : `${count} listed locations in this region.`;
 
     return (
       <div className="max-w-sm p-4 bg-white rounded-lg shadow-lg">
@@ -358,7 +360,8 @@ const TexasMap: React.FC<TexasMapProps> = ({
           </span>
         </div>
         <p className="text-sm text-gray-700">{countCopy}</p>
-        <p className="text-sm text-gray-700 mt-1">Total funded amount: {fundedAmount}</p>
+        <p className="text-sm text-gray-700 mt-1">Funding not verified: source, units and reporting period unavailable.</p>
+        <a className="text-xs text-blue-700 underline" href="/data-provenance.md" target="_blank" rel="noreferrer">Region methodology and data limitations</a>
       </div>
     );
   };

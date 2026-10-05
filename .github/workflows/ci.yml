@@ -44,5 +44,8 @@ jobs:
       - name: Unit tests
         run: npm test -- --ci
 
+      - name: Committed data integrity and reproducible regions
+        run: npm run test:data
+
       - name: Build
         run: npm run build

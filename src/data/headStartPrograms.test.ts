@@ -75,33 +75,72 @@ describe('Head Start Programs Data Processing', () => {
       expect(processed[0].address).toBe(mockRawPrograms[0].address);
       expect(processed[0].lat).toBe(mockRawPrograms[0].coordinates.lat);
       expect(processed[0].lng).toBe(mockRawPrograms[0].coordinates.lng);
-      expect(processed[0].type).toBe('head-start');
+      expect(processed[0].type).toBe('unknown');
+      expect(processed[0].grantee).toBeUndefined();
+      expect(processed[1].type).toBe('unknown'); // Name is not type evidence.
     });
 
-    test('filters out invalid programs', () => {
-      const invalidPrograms = [
-        ...mockRawPrograms,
-        {
-          name: '',  // Invalid: empty name
-          address: '123 Invalid St',
-          coordinates: { lat: 30.0, lng: -97.0 }
-        },
-        {
-          name: 'Invalid Coordinates',
-          address: '456 Invalid Ave',
-          coordinates: { lat: 'invalid' as any, lng: -97.0 }  // Invalid: non-numeric lat
-        },
-        {
-          name: 'Outside Texas',
-          address: '789 Outside St',
-          coordinates: { lat: 40.0, lng: -80.0 }  // Invalid: outside Texas bounds
-        }
-      ];
-      
-      const processed = processHeadStartPrograms(invalidPrograms);
-      
-      // Should only include the valid programs
-      expect(processed.length).toBe(mockRawPrograms.length);
+    test('collapses identical locations, preserves other sites and has order-independent IDs', () => {
+      const original = mockRawPrograms[0];
+      const otherSite = { ...original, address: 'Different office', coordinates: { lat: 30.3, lng: -97.7 } };
+      const movedCoordinate = { ...original, coordinates: { lat: 30.4, lng: -97.8 } };
+      const rows = [original, { ...original, name: ` ${original.name} ` }, otherSite, movedCoordinate];
+      const result = processHeadStartPrograms(rows);
+      expect(result).toHaveLength(3);
+      expect(new Set(result.map(row => row.id)).size).toBe(3);
+      expect(processHeadStartPrograms([...rows].reverse()).map(row => row.id).sort())
+        .toEqual(result.map(row => row.id).sort());
+      expect(processHeadStartPrograms([mockRawPrograms[1], ...rows])[1].id).toBe(result[0].id);
+    });
+
+    test.each([
+      null, [], {}, { name: 5 },
+      { ...mockRawPrograms[0], name: ' ' },
+      { ...mockRawPrograms[0], address: null },
+      { ...mockRawPrograms[0], coordinates: undefined },
+      { ...mockRawPrograms[0], coordinates: null },
+      { ...mockRawPrograms[0], coordinates: { lat: '30', lng: -97 } },
+      { ...mockRawPrograms[0], coordinates: { lat: NaN, lng: -97 } },
+      { ...mockRawPrograms[0], coordinates: { lat: 30, lng: Infinity } },
+      { ...mockRawPrograms[0], coordinates: { lat: 40, lng: -80 } },
+      { ...mockRawPrograms[0], type: 'early-head-start' }, // Uncited fact.
+      { ...mockRawPrograms[0], grantee: 'Uncited recipient' },
+      { ...mockRawPrograms[0], type: 'unknown', source: null },
+      { ...mockRawPrograms[0], source: { reference: '', asOf: null } },
+      { ...mockRawPrograms[0], source: { reference: 'Test document', asOf: '2026-02-30' } },
+      { ...mockRawPrograms[0], source: { reference: 'Test document' } },
+    ])('rejects malformed raw rows with an indexed error: %p', row => {
+      expect(() => processHeadStartPrograms([mockRawPrograms[0], row])).toThrow(/Invalid program record at index 1/);
+    });
+
+    test.each([null, {}, 'not an array'])('rejects malformed datasets explicitly: %p', value => {
+      expect(() => processHeadStartPrograms(value)).toThrow('Invalid program dataset: expected an array');
+    });
+
+    test('preserves cited EHS, combined type and independent grantee fields', () => {
+      const source = { reference: 'Test-only classification document, rows 1-2', asOf: '2026-01-31' };
+      const rows = processHeadStartPrograms([
+        { ...mockRawPrograms[0], type: 'early-head-start', grantee: ' Independent recipient ', source },
+        { ...mockRawPrograms[1], type: 'both', source: { ...source, asOf: null } },
+        mockRawPrograms[2],
+      ]);
+      expect(rows.map(row => row.type)).toEqual(['early-head-start', 'both', 'unknown']);
+      expect(rows[0].grantee).toBe('Independent recipient');
+      expect(rows[0].source).toEqual(source);
+      expect(rows[1].source?.asOf).toBeNull();
+      expect(rows[2].grantee).toBeUndefined();
+      expect(filterHeadStartPrograms(rows, 'Independent recipient')).toEqual([rows[0]]);
+      const actual = jest.requireActual<typeof import('./headStartPrograms')>('./headStartPrograms');
+      expect(actual.getHeadStartProgramsByType(rows, 'head-start')).toEqual([rows[1]]);
+      expect(actual.getHeadStartProgramsByType(rows, 'early-head-start')).toEqual([rows[0], rows[1]]);
+      expect(actual.getHeadStartProgramStats(rows)).toMatchObject({ total: 3, headStartCount: 1, earlyHeadStartCount: 2 });
+    });
+
+    test('rejects conflicting metadata rather than choosing the first duplicate', () => {
+      const row = { ...mockRawPrograms[0], type: 'head-start', source: { reference: 'Test document', asOf: null } };
+      const other = { ...row, type: 'both' };
+      expect(() => processHeadStartPrograms([row, other])).toThrow(/Conflicting metadata/);
+      expect(() => processHeadStartPrograms([other, row])).toThrow(/Conflicting metadata/);
     });
   });
 

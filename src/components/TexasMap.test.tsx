@@ -3,6 +3,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import TexasMap from './TexasMap';
 import { useMapData } from '../hooks/useMapData';
+import { processHeadStartPrograms } from '../data/headStartPrograms';
 
 // Mock the custom hooks
 jest.mock('../hooks/useMapData');
@@ -165,6 +166,41 @@ describe('TexasMap Component', () => {
     });
   });
 
+  test('unknown location metadata is explicitly unverified and traceable', async () => {
+    mockUseMapData.mockReturnValue({
+      ...mockUseMapData(),
+      headStartPrograms: [{ ...mockHeadStartPrograms[0], type: 'unknown', grantee: undefined, funding: undefined }],
+    } as any);
+    render(<TexasMapWithProvider />);
+    fireEvent.click(screen.getByTestId('advanced-marker'));
+    const infoWindow = await screen.findByTestId('info-window');
+    expect(infoWindow).toHaveTextContent('Not verified');
+    expect(infoWindow).toHaveTextContent('Legacy location record');
+    expect(infoWindow).not.toHaveTextContent('Test Grantee 1');
+    expect(infoWindow).not.toHaveTextContent('$1,000,000');
+    expect(infoWindow.querySelector('a')).toHaveAttribute('href', '/data-provenance.md');
+  });
+
+  test.each([
+    ['early-head-start', 'early head start'],
+    ['both', 'Head Start + Early Head Start'],
+  ])('renders cited %s metadata with its evidence', async (type, label) => {
+    const programs = processHeadStartPrograms([{
+      name: 'Test-only cited location', address: 'Test address',
+      coordinates: { lat: 30.2672, lng: -97.7431 },
+      type, grantee: 'Independent test recipient',
+      source: { reference: 'Test-only document, row 1', asOf: '2026-01-31' },
+    }]);
+    mockUseMapData.mockReturnValue({ ...mockUseMapData(), headStartPrograms: programs } as any);
+    render(<TexasMapWithProvider />);
+    fireEvent.click(screen.getByTestId('advanced-marker'));
+    const infoWindow = await screen.findByTestId('info-window');
+    expect(infoWindow).toHaveTextContent(label);
+    expect(infoWindow).toHaveTextContent('Independent test recipient');
+    expect(infoWindow).toHaveTextContent('Test-only document, row 1');
+    expect(infoWindow).toHaveTextContent('2026-01-31');
+  });
+
   test('closes info window when close button is clicked', async () => {
     render(<TexasMapWithProvider />);
     
@@ -304,8 +340,10 @@ describe('TexasMap Component', () => {
 
       const infoWindow = await screen.findByTestId('info-window');
       expect(infoWindow).toHaveTextContent('South');
-      expect(infoWindow).toHaveTextContent('7 Head Start / Early Head Start programs in this region.');
-      expect(infoWindow).toHaveTextContent('Total funded amount: 19,049');
+      expect(infoWindow).toHaveTextContent('7 listed locations in this region.');
+      expect(infoWindow).toHaveTextContent('Funding not verified');
+      expect(infoWindow).not.toHaveTextContent('19,049');
+      expect(infoWindow.querySelector('a')).toHaveAttribute('href', '/data-provenance.md');
 
       // R11: no representative / party / committee / contact content.
       expect(infoWindow).not.toHaveTextContent(/Representative/i);
@@ -336,12 +374,11 @@ describe('TexasMap Component', () => {
       (global as any).__getMapDataInstances()[0]._fireClick({ lat: 30.5, lng: -99.5 });
 
       const infoWindow = await screen.findByTestId('info-window');
-      expect(infoWindow).toHaveTextContent('1 Head Start / Early Head Start program in this region.');
-      // West region's authored funded amount; proves the line is region-keyed, not a constant string.
-      expect(infoWindow).toHaveTextContent('Total funded amount: 11,857');
+      expect(infoWindow).toHaveTextContent('1 listed location in this region.');
+      expect(infoWindow).not.toHaveTextContent('11,857');
     });
 
-    test('region info window shows a loading message when counts are not yet computed', async () => {
+    test('region info window withholds unavailable counts and unverified funding', async () => {
       mockUseMapData.mockReturnValue({
         ...mockUseMapData(),
         txhsaRegions: fourRegions,
@@ -362,9 +399,9 @@ describe('TexasMap Component', () => {
 
       const infoWindow = await screen.findByTestId('info-window');
       expect(infoWindow).toHaveTextContent('North');
-      expect(infoWindow).toHaveTextContent(/Loading program count/);
-      // Funded amount is static and renders synchronously, even while counts load.
-      expect(infoWindow).toHaveTextContent('Total funded amount: 12,311');
+      expect(infoWindow).toHaveTextContent('Location count unavailable');
+      expect(infoWindow).toHaveTextContent('Funding not verified');
+      expect(infoWindow).not.toHaveTextContent('12,311');
     });
   });
 });

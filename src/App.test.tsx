@@ -129,17 +129,20 @@ describe('App', () => {
   describe('header', () => {
     test('renders the application title and subtitle', () => {
       render(<App />);
-      expect(screen.getByText('Texas Head Start Federal Grantee Programs')).toBeInTheDocument();
+      expect(screen.getByText('Texas Head Start Location Directory')).toBeInTheDocument();
       expect(
         screen.getByText(
-          /Explore Head Start and Early Head Start program funding and TXHSA regions across Texas/,
+          /Explore listed locations and project-defined TXHSA regions across Texas/,
         ),
       ).toBeInTheDocument();
+      expect(screen.getByText(/Unverified legacy directory/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Sources and limitations' })).toHaveAttribute('href', '/data-provenance.md');
+      expect(screen.queryByText(/Head Start Program Information Report/)).not.toBeInTheDocument();
     });
 
-    test('renders the Head Start Programs stat in the header (lg+)', () => {
+    test('renders the listed locations stat in the header (lg+)', () => {
       render(<App />);
-      expect(screen.getByText('Head Start Programs')).toBeInTheDocument();
+      expect(screen.getByText('Listed locations')).toBeInTheDocument();
       expect(screen.getByText('TXHSA Regions')).toBeInTheDocument();
       expect(screen.getByText('4')).toBeInTheDocument();
     });

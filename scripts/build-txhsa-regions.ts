@@ -37,6 +37,7 @@ import {
   txhsaCountyOverrides,
 } from '../src/data/tdemCountyRegions';
 import type { Feature, FeatureCollection, Polygon, MultiPolygon } from 'geojson';
+import { isValidPolygonGeometry } from '../src/utils/geometry';
 
 type CountyFeature = Feature<Polygon | MultiPolygon, { COUNTY: string; [k: string]: unknown }>;
 type TxhsaName = 'West' | 'North' | 'East' | 'South';
@@ -103,6 +104,8 @@ export function buildTxhsaRegions(options: BuildOptions = {}): BuildResult {
       throw new Error('County feature missing COUNTY property');
     }
     const countyName = rawName.replace(/ County$/, '').trim();
+    if (seenCounties.has(countyName)) throw new Error(`Duplicate county: ${countyName}`);
+    if (!isValidPolygonGeometry(feature.geometry)) throw new Error(`Invalid county geometry: ${countyName}`);
     seenCounties.add(countyName);
     const tdemRegion = countyLookup[countyName];
     if (!tdemRegion) {
@@ -182,6 +185,7 @@ export function buildTxhsaRegions(options: BuildOptions = {}): BuildResult {
       geometry = merged.geometry as Polygon | MultiPolygon;
     }
 
+    if (!isValidPolygonGeometry(geometry)) throw new Error(`Invalid generated geometry: ${name}`);
     const feature: Feature<Polygon | MultiPolygon, { name: TxhsaName }> = {
       type: 'Feature',
       properties: { name },

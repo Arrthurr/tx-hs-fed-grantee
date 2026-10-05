@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "issue": "https://github.com/Arrthurr/tx-hs-fed-grantee/issues/11",
+  "source": {
+    "path": "public/assets/geojson/headStartPrograms.json",
+    "publicUrl": "/assets/geojson/headStartPrograms.json",
+    "sha256": "ba2777259ffd075c43ca05e2577973e3242bfbed5cd412c559b04ce0302da12e",
+    "owner": "Repository owner (arrthurr)",
+    "confirmation": "Owner identified this committed JSON as the original program source in the linked Amp thread.",
+    "confirmationThread": "https://ampcode.com/threads/T-01a1098d-f494-76d1-a7e5-a40a83d068c7",
+    "upstreamUrl": null,
+    "retrievedAt": null,
+    "asOf": null,
+    "redistributionTerms": null
+  },
+  "entity": "Listed name/address/coordinate record; administrative office versus service location is not confirmed",
+  "countingRule": "One distinct tuple of trimmed name, trimmed address, latitude and longitude; not one organization, grant or federal program",
+  "identity": "legacy-location: followed by the JSON identity tuple; stable across reorder, changed by tuple corrections; not a federal identifier",
+  "rawRows": 86,
+  "distinctLocations": 85,
+  "exactDuplicate": {
+    "name": "Brazoria County Head Start Early Learning Schools, Inc",
+    "zeroBasedIndexes": [54, 75],
+    "resolution": "Preserve source rows; processor counts the identical location once"
+  },
+  "classification": "Unknown unless a row supplies type and source.reference with source.asOf (ISO date or null)",
+  "grantee": "Unknown unless a row supplies grantee and the same citation contract",
+  "geocoding": {
+    "method": null,
+    "date": null,
+    "datum": null,
+    "units": "decimal degrees",
+    "coordinateOrder": "lat, lng in source objects; lng, lat in GeoJSON geometry"
+  },
+  "completeness": "Not verified as a current or complete census of Texas programs or service locations",
+  "regionalFunding": {
+    "owner": "Repository owner",
+    "sourceDocumentAvailable": false,
+    "units": null,
+    "reportingPeriod": null,
+    "measure": null,
+    "methodology": null,
+    "displayPolicy": "Withhold figures; display explicit funding-not-verified notice"
+  },
+  "updateProcedure": "/data-provenance.md"
+}

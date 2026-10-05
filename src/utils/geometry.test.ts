@@ -1,4 +1,4 @@
-import { isPointInPolygon, isPointInSinglePolygon, isPointInMultiPolygon } from './geometry';
+import { isPointInPolygon, isPointInSinglePolygon, isPointInMultiPolygon, isValidPolygonGeometry } from './geometry';
 import type { PolygonGeometry } from './geometry';
 
 // Coordinates are [lng, lat]. A unit square from (-1,-1) to (1,1).
@@ -30,12 +30,30 @@ describe('isPointInSinglePolygon', () => {
     expect(isPointInSinglePolygon(0, 0, [[]])).toBe(false);
   });
 
-  it('produces deterministic behavior on edges (documented; not asserting correctness)', () => {
-    // The ray-casting algorithm has a well-defined - if implementation-specific -
-    // answer on edges. We assert determinism by calling twice and comparing.
-    const a = isPointInSinglePolygon(1, 0, unitSquare);
-    const b = isPointInSinglePolygon(1, 0, unitSquare);
-    expect(a).toBe(b);
+  it('includes all outer edges and vertices', () => {
+    for (const [lat, lng] of [[1, 0], [-1, 0], [0, -1], [0, 1], [1, 1]]) {
+      expect(isPointInSinglePolygon(lat, lng, unitSquare)).toBe(true);
+    }
+  });
+
+  it('excludes holes and their edges in Polygon and MultiPolygon', () => {
+    const withHole = [unitSquare[0], [[0.2, 0.1], [0.8, 0.1], [0.8, 0.6], [0.2, 0.6], [0.2, 0.1]]];
+    expect(isPointInSinglePolygon(-0.5, -0.3, withHole)).toBe(true);
+    expect(isPointInSinglePolygon(0.3, 0.4, withHole)).toBe(false);
+    expect(isPointInSinglePolygon(0.1, 0.4, withHole)).toBe(false);
+    expect(isPointInMultiPolygon(0.3, 0.4, [withHole])).toBe(false);
+  });
+});
+
+describe('isValidPolygonGeometry', () => {
+  it('rejects open, degenerate, non-finite and malformed rings', () => {
+    expect(isValidPolygonGeometry({ type: 'Polygon', coordinates: unitSquare })).toBe(true);
+    for (const coordinates of [
+      [unitSquare[0].slice(0, -1)], [[]], [[[-1, -1], [-1, -1], [-1, -1], [-1, -1]]],
+      [[[NaN, 0], [1, 0], [1, 1], [NaN, 0]]], [[null]],
+    ]) {
+      expect(isValidPolygonGeometry({ type: 'Polygon', coordinates })).toBe(false);
+    }
   });
 });
 

@@ -32,9 +32,11 @@ export interface HeadStartProgram {
   /** Longitude coordinate */
   lng: number;
   /** Program type */
-  type: 'head-start' | 'early-head-start';
+  type: 'head-start' | 'early-head-start' | 'both' | 'unknown';
   /** Grantee organization */
   grantee?: string;
+  /** Evidence for optional classification and legal grantee fields. */
+  source?: { reference: string; asOf: string | null };
   /** Funding amount (optional) */
   funding?: number;
 }
@@ -72,4 +74,3 @@ export interface TxhsaRegion {
   /** Geographic centroid used for label / fitBounds positioning */
   center: google.maps.LatLngLiteral;
 }
-

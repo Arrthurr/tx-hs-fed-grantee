@@ -78,7 +78,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({
                       : 'bg-blue-100 text-blue-800'
                   }`}
                 >
-                  {program.type === 'head-start' ? 'HS' : 'EHS'}
+                  {program.type === 'unknown' ? 'Unverified' : program.type === 'both' ? 'HS + EHS' : program.type === 'head-start' ? 'HS' : 'EHS'}
                 </span>
               </div>
             </button>

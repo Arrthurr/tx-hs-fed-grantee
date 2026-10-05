@@ -249,13 +249,13 @@ const AppContent: React.FC = () => {
                 <img src="/images/blue-texas.svg" alt="Texas logo" className="h-10" />
                 <div>
                   <h1 className="text-2xl font-bold text-tx-gray-900 flex items-center gap-2">
-                    Texas Head Start Federal Grantee Programs
+                    Texas Head Start Location Directory
                     {/* <span className="text-sm font-medium bg-tx-orange-100 text-tx-orange-700 px-2 py-1 rounded-full">
                       Public Preview
                     </span> */}
                   </h1>
                   <p className="text-sm text-tx-gray-600 mt-1">
-                    Explore Head Start and Early Head Start program funding and TXHSA regions across Texas
+                    Explore listed locations and project-defined TXHSA regions across Texas
                   </p>
                 </div>
               </div>
@@ -268,7 +268,7 @@ const AppContent: React.FC = () => {
                       <Building2 className="w-5 h-5 text-headstart-primary" aria-hidden="true" />
                       <span className="text-xl font-bold text-tx-gray-900">{headStartPrograms.length}</span>
                     </div>
-                    <p className="text-xs text-tx-gray-600">Head Start Programs</p>
+                    <p className="text-xs text-tx-gray-600">Listed locations</p>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center space-x-2">
@@ -297,10 +297,14 @@ const AppContent: React.FC = () => {
               
               <div className="relative z-10">
                 <h2 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
-                  Federal Grantee Head Start Programs
+                  Listed Head Start Locations
                 </h2>
                 <p className="text-tx-blue-100 text-sm leading-relaxed">
                   Click on program markers to view details. Toggle layers to explore Head Start programs and TXHSA regions.
+                </p>
+                <p className="text-tx-blue-100 text-sm mt-2">
+                  Unverified legacy directory: reporting date, program types, grantees and funding are unknown. Counts are listed locations, not statewide program totals.{' '}
+                  <a className="underline font-medium" href="/data-provenance.md" target="_blank" rel="noreferrer">Sources and limitations</a>
                 </p>
               </div>
             </div>
@@ -315,10 +319,10 @@ const AppContent: React.FC = () => {
           <footer className="mt-8 text-center" role="contentinfo">
             <div className="text-sm text-tx-gray-500">
               <p>
-                Texas Head Start Interactive Map - An internal analysis tool for program directors and policymakers
+                Texas Head Start Interactive Map — exploratory directory, not authoritative policy or funding analysis
               </p>
               <p className="mt-1">
-                Data sources: Head Start Program Information Report (PIR) • U.S. Census Bureau
+                <a className="underline" href="/data-provenance.md" target="_blank" rel="noreferrer">Data provenance, region methodology and refresh requirements</a>
               </p>
             </div>
           </footer>

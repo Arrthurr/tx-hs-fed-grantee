@@ -174,39 +174,24 @@ const useMapDataInternal = () => {
   /**
    * Lazy program counts per TXHSA region.
    *
-   * Computed once both regions and programs are loaded. Each program is
-   * assigned to the first matching region; per R4 regions don't overlap,
-   * so first-match is unambiguous. Result is null until inputs are ready.
+   * Computed once both regions and programs are loaded. Publish no counts
+   * if any location has zero or multiple matches (including shared edges).
    */
   const regionProgramCounts = useMemo<Record<TxhsaRegionName, number> | null>(() => {
     if (txhsaRegions.length === 0 || headStartPrograms.length === 0) {
       return null;
     }
     const counts: Record<TxhsaRegionName, number> = { West: 0, North: 0, East: 0, South: 0 };
-    let unmatched = 0;
     for (const program of headStartPrograms) {
-      let matched = false;
-      for (const region of txhsaRegions) {
-        if (isPointInPolygon(program.lat, program.lng, region.feature.geometry)) {
-          counts[region.name] += 1;
-          matched = true;
-          break;
-        }
-      }
-      if (!matched) {
-        unmatched += 1;
-        // Surface the R10 invariant violation -- "each program counted in
-        // exactly one region" -- so it's visible during development even
-        // when no test exercises the data path that produced it. Terser's
-        // drop_console strips this in production builds (see vite.config.ts).
+      const matches = txhsaRegions.filter(region =>
+        isPointInPolygon(program.lat, program.lng, region.feature.geometry));
+      if (matches.length !== 1) {
         console.warn(
-          `[useMapData] Program "${program.name}" (id=${program.id}, lat=${program.lat}, lng=${program.lng}) ` +
-          `falls outside all TXHSA region polygons; not counted.`,
+          `[useMapData] Location ${program.id} matches ${matches.length} regions; counts withheld.`,
         );
+        return null;
       }
-    }
-    if (unmatched > 0) {
-      console.warn(`[useMapData] ${unmatched} program(s) unmatched out of ${headStartPrograms.length}.`);
+      counts[matches[0].name] += 1;
     }
     return counts;
   }, [txhsaRegions, headStartPrograms]);

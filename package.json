@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "test": "jest",
     "build:regions": "tsx scripts/build-txhsa-regions.ts",
+    "test:data": "tsx scripts/check-data.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

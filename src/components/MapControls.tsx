@@ -227,7 +227,7 @@ const MapControls: React.FC<MapControlsProps> = ({
                   Head Start Programs
                 </span>
                 <p className="text-xs text-tx-gray-500">
-                  {programCount} programs across Texas
+                  {programCount} listed locations
                 </p>
               </div>
             </div>

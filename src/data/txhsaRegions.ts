@@ -1,19 +1,7 @@
 import type { TxhsaRegion, TxhsaRegionFeature, TxhsaRegionName } from '../types/maps';
+import { isValidPolygonGeometry } from '../utils/geometry';
 
 export const TXHSA_REGION_NAMES: readonly TxhsaRegionName[] = ['West', 'North', 'East', 'South'] as const;
-
-/**
- * Total funded amount per TXHSA region. These are authored figures supplied
- * by the product owner -- not derived from headStartPrograms.json. Future
- * maintainers should update the values here rather than computing them from
- * program-level funding data, unless this overlay's source-of-truth changes.
- */
-export const REGION_FUNDED_AMOUNTS: Record<TxhsaRegionName, number> = {
-  West: 11857,
-  North: 12311,
-  East: 15360,
-  South: 19049,
-};
 
 /**
  * Validate a raw region feature loaded from a region geojson file.
@@ -29,11 +17,7 @@ export const validateTxhsaRegion = (feature: unknown): feature is TxhsaRegionFea
   if (!props || typeof props.name !== 'string') return false;
   if (!TXHSA_REGION_NAMES.includes(props.name as TxhsaRegionName)) return false;
 
-  const geom = f.geometry as Record<string, unknown> | undefined;
-  if (!geom || (geom.type !== 'Polygon' && geom.type !== 'MultiPolygon')) return false;
-  if (!Array.isArray(geom.coordinates) || geom.coordinates.length === 0) return false;
-
-  return true;
+  return isValidPolygonGeometry(f.geometry);
 };
 
 /**
