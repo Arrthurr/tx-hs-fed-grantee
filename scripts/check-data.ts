@@ -87,5 +87,5 @@ assert.equal(Object.values(counts).reduce((a, b) => a + b, 0), locations.length)
 // Deliberate snapshot gate: changes require count/provenance review, not silent drift.
 assert.equal(raw.length, 86);
 assert.equal(locations.length, 85);
-assert.deepEqual(counts, { West: 14, North: 24, East: 27, South: 20 });
+assert.deepEqual(counts, { West: 14, North: 23, East: 28, South: 20 });
 console.log('Data integrity passed:', { rows: raw.length, locations: locations.length, counties: 254, counts });

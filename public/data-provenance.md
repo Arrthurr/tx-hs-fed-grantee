@@ -77,6 +77,14 @@ and `docs/solutions/architecture-patterns/per-county-override-layer-over-authori
 It relocates six listed locations; no external TXHSA approval is documented.
 Do not represent this product decision as an externally verified boundary.
 
+The subsequent repository change
+[85285bc](https://github.com/Arrthurr/tx-hs-fed-grantee/commit/85285bc83155e0e20bd5b461c1e13adcd02f4f84)
+adds Houston, San Jacinto, Smith and Trinity to the East overrides. Comparing
+the before/after geometry against the unchanged location source moves Tyler
+ISD (807 W Glenwood Blvd, Tyler) from North to East. The current reviewed
+location totals are West 14, North 23, East 28 and South 20 (85 total).
+These additional overrides likewise have no documented external TXHSA approval.
+
 `npm run build:regions` dissolves county polygons using the locked Turf version.
 Counts use each distinct listed location's coordinates, not address/county text.
 Outer polygon boundaries are included, holes and their boundaries excluded.
