@@ -78,6 +78,12 @@ describe('ErrorDisplay Component', () => {
     expect(mockProps.onRetry).toHaveBeenCalled();
   });
 
+  test('supports a reload action label', () => {
+    render(<ErrorDisplay {...mockProps} retryLabel="Reload Page" />);
+
+    expect(screen.getByRole('button', { name: 'Reload Page' })).toHaveTextContent('Reload Page');
+  });
+
   test('does not render retry button when onRetry is not provided', () => {
     render(<ErrorDisplay error="Test error" />);
     

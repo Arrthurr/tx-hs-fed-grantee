@@ -15,6 +15,10 @@ interface MapControlsProps {
   onToggleLayer: (layer: keyof MapControlsProps['layerVisibility']) => void;
   /** Number of programs */
   programCount: number;
+  regionsLoading?: boolean;
+  regionsError?: string | null;
+  regionsAvailable?: boolean;
+  onRetryRegions?: () => void;
   /** Reference to the map container for boundary constraints */
   mapContainerRef?: React.RefObject<HTMLDivElement>;
 }
@@ -23,6 +27,10 @@ const MapControls: React.FC<MapControlsProps> = ({
   layerVisibility,
   onToggleLayer,
   programCount,
+  regionsLoading = false,
+  regionsError = null,
+  regionsAvailable = true,
+  onRetryRegions,
   mapContainerRef
 }) => {
   // Drag state management
@@ -42,6 +50,7 @@ const MapControls: React.FC<MapControlsProps> = ({
    * Uses Pointer Events API to avoid Google Maps interference
    */
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if ((e.target as HTMLElement).closest('button, a')) return;
     if (!cardRef.current || !mapContainerRef?.current) return;
 
     // 1. Don't let the event bubble to the map - this is crucial!
@@ -246,6 +255,8 @@ const MapControls: React.FC<MapControlsProps> = ({
             title="Toggle TXHSA Regions"
             aria-label="Toggle TXHSA Regions layer"
             aria-pressed={layerVisibility.txhsaRegions}
+            disabled={regionsLoading || !!regionsError || !regionsAvailable}
+            aria-describedby="regions-status"
           >
             <div className="flex items-center space-x-3">
               <div className={`p-2 rounded-lg transition-colors duration-200 ${
@@ -266,7 +277,7 @@ const MapControls: React.FC<MapControlsProps> = ({
                   TXHSA Regions
                 </span>
                 <p className="text-xs text-tx-gray-500">
-                  Show regional boundaries
+                  {regionsLoading ? 'Loading boundaries…' : regionsError || !regionsAvailable ? 'Boundaries unavailable' : 'Show regional boundaries'}
                 </p>
               </div>
             </div>
@@ -276,6 +287,17 @@ const MapControls: React.FC<MapControlsProps> = ({
                 : 'bg-white border-tx-gray-300 group-hover:border-tx-gray-400'
             }`} aria-hidden="true"></div>
           </button>
+          <div id="regions-status" className="px-4 pb-3 max-w-xs text-sm text-tx-gray-700">
+            {regionsLoading && <p role="status">Loading TXHSA regions. Program locations remain available.</p>}
+            {regionsError && (
+              <div role="alert">
+                <p>{regionsError}</p>
+                <button type="button" className="btn-primary mt-2" onClick={onRetryRegions}>
+                  Retry TXHSA regions
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

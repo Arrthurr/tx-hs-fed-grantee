@@ -1,8 +1,21 @@
 # E2E Tests (Playwright)
 
-The Playwright infrastructure (`playwright.config.ts`, `npm run test:e2e` scripts,
-`@playwright/test` dependency) is in place, but **no tests are currently
-checked in**.
+`loading-recovery.spec.ts` covers optional-region loading, malformed/HTTP
+failures, keyboard retry, overlay removal, script failure/reload recovery,
+and authorization errors. It intercepts the Google SDK request with a controlled
+test double; the real Maps React components and application data loaders run.
+This suite does not verify live Google tiles, geographic rendering, or credentials.
+
+Run from the repo root with no existing Vite server (or restart that server with
+the same test-only key):
+
+```bash
+npx playwright install chromium
+VITE_GOOGLE_MAPS_API_KEY=e2e-test-only-not-a-real-google-key npm run test:e2e -- loading-recovery.spec.ts --project=chromium
+```
+
+The synthetic key is not a credential and is never sent to Google by these tests.
+Do not use it for production builds. No app-side test switches are added.
 
 The previous suite was removed because it had drifted out of sync with the UI
 (incorrect h1 text, stale selectors like "Map Controls" and zoom-in buttons,
@@ -10,11 +23,11 @@ and a `MOCK_API_ERROR` localStorage hook that nothing in the app reads). CI
 intentionally omits E2E — see the comment at the top of
 `.github/workflows/ci.yml`.
 
-## Re-adding a suite
+## Remaining live-map coverage (issue #4)
 
 A future suite should cover:
 
-- **App load**: header text ("Texas Head Start Federal Grantee Programs"),
+- **App load**: header text ("Texas Head Start Location Directory"),
   map canvas visible, data layers heading visible.
 - **Search**: typing a program name → results appear → clicking a result opens
   an info window.
@@ -29,7 +42,7 @@ A future suite should cover:
 - **Accessibility**: interactive elements have accessible names, images have
   alt text.
 
-## Requirements to run
+## Requirements for live-map checks
 
 - A live `VITE_GOOGLE_MAPS_API_KEY` in `.env.local` (or a CI secret).
 - The dev server running (`npm run dev`) — `playwright.config.ts` starts it

@@ -1,5 +1,5 @@
 /// <reference types="@testing-library/jest-dom" />
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { render, screen, act, waitFor } from '@testing-library/react';
 import { APIProvider as ApiProviderMock } from '@vis.gl/react-google-maps';
 import App from './App';
 
@@ -56,30 +56,6 @@ const installFetchMock = () => {
   });
 };
 
-// Mock the Google Maps API constructors so App's checkMapsReady() can resolve
-// when APIProvider fires onLoad. The setupTests.ts global.google mock provides
-// Map, Data, LatLng, etc. but does not set up Marker / InfoWindow as functions
-// with prototypes — App.checkMapsReady specifically gates on those three. We
-// install a complete constructor shape here so the mapsReady polling loop can
-// succeed.
-const installMapsConstructors = () => {
-  function FakeMarker() {}
-  function FakeInfoWindow() {}
-  (window.google as any).maps.Marker = FakeMarker;
-  (window.google as any).maps.InfoWindow = FakeInfoWindow;
-  // Map is already jest.fn().mockImplementation() from setupTests.ts; ensure
-  // it has a prototype so checkMapsReady's `&&` chain passes.
-  if (!(window.google.maps.Map as any).prototype) {
-    (window.google.maps.Map as any).prototype = {};
-  }
-  if (!(window.google.maps.Marker as any).prototype) {
-    (window.google.maps.Marker as any).prototype = {};
-  }
-  if (!(window.google.maps.InfoWindow as any).prototype) {
-    (window.google.maps.InfoWindow as any).prototype = {};
-  }
-};
-
 // setupTests.ts already mocks '@vis.gl/react-google-maps' with an APIProvider
 // that fires onLoad synchronously during render. That makes it impossible to
 // assert the pre-load loading state or drive error paths. We override the
@@ -118,7 +94,6 @@ describe('App', () => {
     jest.clearAllMocks();
     installFetchMock();
     overrideApiProviderMock();
-    installMapsConstructors();
     setEnv({});
   });
 
@@ -149,16 +124,17 @@ describe('App', () => {
   });
 
   describe('API key validation', () => {
-    test('shows a configuration error when the API key is missing', async () => {
+    test('shows a configuration error without a retry when the API key is missing', async () => {
       setEnv({ VITE_GOOGLE_MAPS_API_KEY: '' });
       render(<App />);
       await waitFor(() => {
         expect(
-          screen.getByText(/Google Maps API key is not configured/i),
+          screen.getByText(/Google Maps is not configured/i),
         ).toBeInTheDocument();
       });
       // API provider is never mounted when the key is missing.
       expect(screen.queryByTestId('api-provider')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Retry loading map')).not.toBeInTheDocument();
     });
 
     test('shows a placeholder error when the API key is the sample value', async () => {
@@ -166,7 +142,7 @@ describe('App', () => {
       render(<App />);
       await waitFor(() => {
         expect(
-          screen.getByText(/replace the placeholder API key/i),
+          screen.getByText(/placeholder API key/i),
         ).toBeInTheDocument();
       });
     });
@@ -198,8 +174,7 @@ describe('App', () => {
       expect(screen.queryByTestId('google-map')).not.toBeInTheDocument();
     });
 
-    test('renders TexasMap after onLoad fires and constructors are ready', async () => {
-      jest.useFakeTimers();
+    test('renders TexasMap as soon as APIProvider onLoad fires', async () => {
       render(<App />);
       await waitFor(() => {
         expect(screen.getByTestId('api-provider')).toBeInTheDocument();
@@ -210,47 +185,9 @@ describe('App', () => {
         getLastApiProps().onLoad?.();
       });
 
-      // handleApiLoad waits 500ms then polls checkMapsReady. Constructors are
-      // installed in beforeEach, so the first poll resolves mapsReady=true.
-      await act(async () => {
-        jest.advanceTimersByTime(600);
-      });
-
       await waitFor(() => {
         expect(screen.getByTestId('google-map')).toBeInTheDocument();
       });
-    });
-
-    test('polls and eventually errors when constructors never become ready', async () => {
-      // Remove the Marker / InfoWindow constructors so checkMapsReady stays false.
-      (window.google as any).maps.Marker = undefined;
-      (window.google as any).maps.InfoWindow = undefined;
-
-      // Silence the expected console.error from the polling-exhausted branch.
-      const spy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-      jest.useFakeTimers();
-      render(<App />);
-      await waitFor(() => {
-        expect(screen.getByTestId('api-provider')).toBeInTheDocument();
-      });
-
-      await act(async () => {
-        getLastApiProps().onLoad?.();
-      });
-
-      // 500ms initial delay + up to 50 * 100ms of polling = 5.5s total.
-      await act(async () => {
-        jest.advanceTimersByTime(6000);
-      });
-
-      await waitFor(() => {
-        expect(
-          screen.getByText(/Google Maps API failed to initialize/i),
-        ).toBeInTheDocument();
-      });
-
-      spy.mockRestore();
     });
   });
 
@@ -271,67 +208,70 @@ describe('App', () => {
 
     test('classifies InvalidKeyMapError as an invalid API key', async () => {
       await driveError(new Error('InvalidKeyMapError: bad key'));
-      expect(screen.getByText(/The API key is invalid/i)).toBeInTheDocument();
+      expect(screen.getByText(/not authorized for this site/i)).toBeInTheDocument();
+      expect(screen.getByText(/InvalidKeyMapError: bad key/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText('Retry loading map')).not.toBeInTheDocument();
     });
 
     test('classifies RefererNotAllowedMapError as a domain restriction', async () => {
       await driveError(new Error('RefererNotAllowedMapError: not allowed'));
-      expect(screen.getByText(/This domain is not authorized/i)).toBeInTheDocument();
+      expect(screen.getByText(/not authorized for this site/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText('Retry loading map')).not.toBeInTheDocument();
     });
 
     test('classifies QuotaExceededError as a quota issue', async () => {
       await driveError(new Error('QuotaExceededError: over quota'));
-      expect(screen.getByText(/API quota exceeded/i)).toBeInTheDocument();
+      expect(screen.getByText(/not authorized for this site/i)).toBeInTheDocument();
+      expect(screen.queryByLabelText('Retry loading map')).not.toBeInTheDocument();
     });
 
     test('falls back to a generic message for unrecognized Error instances', async () => {
       await driveError(new Error('Something else went wrong'));
-      expect(screen.getByText(/check your API key and internet connection/i)).toBeInTheDocument();
+      expect(screen.getByText(/could not be loaded/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Reload Page' })).toHaveTextContent('Reload Page');
     });
 
     test('falls back to a generic message for non-Error throws', async () => {
       await driveError('a string error');
-      expect(screen.getByText(/check your API key and internet connection/i)).toBeInTheDocument();
+      expect(screen.getByText(/could not be loaded/i)).toBeInTheDocument();
     });
   });
 
   describe('retry', () => {
-    test('clicking Retry on an API-key error resets to the loading state, then proceeds (effect does not re-run)', async () => {
+    test('an invalid configured key cannot bypass validation', async () => {
       setEnv({ VITE_GOOGLE_MAPS_API_KEY: 'short' });
-      expect((global as any).__VITE_ENV__.VITE_GOOGLE_MAPS_API_KEY).toBe('short');
       render(<App />);
-
-      // Initial invalid-key error (real timers so useEffect + waitFor work).
       await waitFor(() => {
         expect(screen.getByText(/appears to be invalid/i)).toBeInTheDocument();
       });
-
-      const retryButton = screen.getByLabelText('Retry loading map');
-
-      // Switch to fake timers for the 500ms retry delay so we can advance it
-      // deterministically without waiting in real time.
-      jest.useFakeTimers();
-      await act(async () => {
-        fireEvent.click(retryButton);
-      });
-
-      // handleRetry sets isInitializing=true for 500ms.
-      expect(screen.getByText(/Initializing application/i)).toBeInTheDocument();
-
-      // After the 500ms delay, isInitializing flips false. The key-validation
-      // useEffect does NOT re-run (deps [apiKey, mapId] unchanged) and
-      // handleRetry cleared apiError, so the app proceeds to the API provider
-      // loading state rather than re-showing the error. This documents the
-      // current retry behavior; if the effect re-ran on retry, the error would
-      // reappear here.
-      await act(async () => {
-        jest.advanceTimersByTime(600);
-      });
-      await waitFor(() => {
-        expect(screen.getByTestId('api-provider')).toBeInTheDocument();
-      });
-
-      jest.useRealTimers();
+      expect(screen.queryByLabelText('Retry loading map')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('api-provider')).not.toBeInTheDocument();
     });
+  });
+
+  test('API timeout is recoverable, late success clears it, and unmount clears the timer', async () => {
+    jest.useFakeTimers();
+    const { unmount } = render(<App />);
+    await act(async () => {});
+    await act(async () => { jest.advanceTimersByTime(15_000); });
+    expect(screen.getByRole('alert')).toHaveTextContent('Google Maps loading timed out');
+    expect(screen.getByRole('button', { name: 'Reload Page' })).toBeInTheDocument();
+    await act(async () => { getLastApiProps().onLoad?.(); });
+    expect(screen.getByTestId('google-map')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    unmount();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+
+  test('unmount during API loading cleans up the deadline and authorization callback', async () => {
+    jest.useFakeTimers();
+    const mapsWindow = window as Window & { gm_authFailure?: () => void };
+    const previous = mapsWindow.gm_authFailure;
+    const { unmount } = render(<App />);
+    await act(async () => {});
+    expect(mapsWindow.gm_authFailure).not.toBe(previous);
+    unmount();
+    expect(mapsWindow.gm_authFailure).toBe(previous);
+    expect(jest.getTimerCount()).toBe(0);
   });
 });

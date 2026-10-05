@@ -60,10 +60,12 @@ const TexasMap: React.FC<TexasMapProps> = ({
   // the entire map. Only programsError blocks the map gate below.
   const {
     headStartPrograms,
-    isLoading,
+    isLoadingPrograms,
+    isLoadingRegions,
     programsError,
     regionsError,
     retryLoading,
+    loadTxhsaRegions,
     txhsaRegions,
     regionProgramCounts,
     layerVisibility,
@@ -219,6 +221,12 @@ const TexasMap: React.FC<TexasMapProps> = ({
     }
   }, [mapLoaded, layerVisibility.txhsaRegions, txhsaRegions, renderRegionOverlays]);
 
+  useEffect(() => {
+    if (selectedMarker?.region && (!layerVisibility.txhsaRegions || !txhsaRegions.includes(selectedMarker.region))) {
+      handleInfoWindowClose();
+    }
+  }, [selectedMarker, layerVisibility.txhsaRegions, txhsaRegions, handleInfoWindowClose]);
+
   /**
    * Cleanup effect to remove overlays when component unmounts
    */
@@ -367,7 +375,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
   };
 
   // Show loading state while data is being fetched
-  if (isLoading) {
+  if (isLoadingPrograms && headStartPrograms.length === 0) {
     return (
       <div className="flex items-center justify-center" style={{ height }}>
         <LoadingSpinner message="Loading map data..." size="lg" />
@@ -378,7 +386,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
   // Show error state only when the programs fetch failed -- without programs
   // there is nothing meaningful to render. A regions-only failure is reported
   // upstream (App's header / ErrorDisplay) but does not block the map.
-  if (programsError) {
+  if (programsError && headStartPrograms.length === 0) {
     return (
       <div className="flex items-center justify-center" style={{ height }}>
         <ErrorDisplay
@@ -394,12 +402,18 @@ const TexasMap: React.FC<TexasMapProps> = ({
   // Map the layer visibility from useMapData to the format expected by MapControls
   const mapControlsLayerVisibility = {
     programs: layerVisibility.headStartPrograms,
-    txhsaRegions: layerVisibility.txhsaRegions
+    txhsaRegions: layerVisibility.txhsaRegions && !isLoadingRegions && !regionsError && txhsaRegions.length > 0
   };
 
 
   return (
     <div ref={mapContainerRef} className={`relative ${className}`} style={{ height }}>
+      {programsError && (
+        <div role="alert" className="absolute bottom-4 right-4 z-map-controls card-elevated p-4 max-w-sm">
+          <p>{programsError} Showing previously loaded locations.</p>
+          <button type="button" className="btn-primary mt-2" onClick={retryLoading}>Retry program locations</button>
+        </div>
+      )}
       {/* Search */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] w-[90%] max-w-md">
         <SearchBar
@@ -424,6 +438,10 @@ const TexasMap: React.FC<TexasMapProps> = ({
         onToggleLayer={handleMapControlsToggle}
         programCount={headStartPrograms?.length || 0}
         mapContainerRef={mapContainerRef}
+        regionsLoading={isLoadingRegions}
+        regionsError={regionsError}
+        regionsAvailable={txhsaRegions.length > 0}
+        onRetryRegions={loadTxhsaRegions}
       />
 
       {/* Google Map */}

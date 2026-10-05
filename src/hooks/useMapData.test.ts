@@ -303,4 +303,138 @@ describe('useMapData Hook', () => {
     expect(result.current).not.toHaveProperty('loadCongressionalData');
     expect(result.current.layerVisibility).not.toHaveProperty('districtBoundaries');
   });
+
+  describe('request lifecycle', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+      jest.spyOn(console, 'error').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+      jest.useRealTimers();
+    });
+
+    test('timeouts are errors, programs retry at 1/2/4 seconds then stop', async () => {
+      (fetch as jest.Mock).mockImplementation((_url: string, { signal }: RequestInit) =>
+        new Promise((_resolve, reject) => signal?.addEventListener('abort', () =>
+          reject(new DOMException('Aborted', 'AbortError')), { once: true })));
+      const { result, unmount } = renderHook(() => useMapData());
+      await act(async () => { jest.advanceTimersByTime(10_000); });
+      expect(result.current.programsError).toContain('timed out');
+      expect(result.current.regionsError).toContain('timed out');
+      expect(result.current.isLoading).toBe(false);
+      for (const delay of [1000, 2000, 4000]) {
+        await act(async () => { jest.advanceTimersByTime(delay - 1); });
+        expect(result.current.isLoadingPrograms).toBe(false);
+        await act(async () => { jest.advanceTimersByTime(1); });
+        expect(result.current.isLoadingPrograms).toBe(true);
+        await act(async () => { jest.advanceTimersByTime(10_000); });
+        expect(result.current.programsError).toContain('timed out');
+      }
+      await act(async () => { jest.advanceTimersByTime(60_000); });
+      expect((fetch as jest.Mock).mock.calls.filter(([url]) => url.includes('headStartPrograms')).length).toBe(4);
+      expect(jest.getTimerCount()).toBe(0);
+      unmount();
+    });
+
+    test('manual retry cancels backoff and recovers without an orphaned chain', async () => {
+      const originalFetch = (fetch as jest.Mock).getMockImplementation()!;
+      (fetch as jest.Mock).mockImplementation((url: string, options: RequestInit) =>
+        url.includes('headStartPrograms') ? Promise.reject(new TypeError('Failed to fetch')) : originalFetch(url, options));
+      const { result } = renderHook(() => useMapData());
+      await act(async () => {});
+      expect(result.current.programsError).toContain('Network error');
+      (fetch as jest.Mock).mockImplementation(originalFetch);
+      await act(async () => { result.current.retryLoading(); });
+      expect(result.current.headStartPrograms).toHaveLength(2);
+      expect(result.current.programsError).toBeNull();
+      await act(async () => { jest.advanceTimersByTime(60_000); });
+      expect((fetch as jest.Mock).mock.calls.filter(([url]) => url.includes('headStartPrograms')).length).toBe(2);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    test('superseded responses cannot overwrite newer programs or loading state', async () => {
+      const originalFetch = (fetch as jest.Mock).getMockImplementation()!;
+      let resolveOld!: (response: unknown) => void;
+      let oldSignal!: AbortSignal;
+      (fetch as jest.Mock).mockImplementation((url: string, options: RequestInit) => {
+        if (url.includes('headStartPrograms')) {
+          oldSignal = options.signal!;
+          return new Promise(resolve => { resolveOld = resolve; });
+        }
+        return originalFetch(url, options);
+      });
+      const { result } = renderHook(() => useMapData());
+      await act(async () => {});
+      (fetch as jest.Mock).mockImplementation(originalFetch);
+      await act(async () => { result.current.loadHeadStartPrograms(); });
+      expect(oldSignal.aborted).toBe(true);
+      await act(async () => {
+        resolveOld({ ok: true, json: async () => [{ ...mockHeadStartProgramsData[0], name: 'Stale location' }] });
+      });
+      expect(result.current.headStartPrograms.map(p => p.name)).toEqual(['Test Program 1', 'Test Program 2']);
+      expect(result.current.programsError).toBeNull();
+      expect(result.current.isLoadingPrograms).toBe(false);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    test('unmount cancels requests and does not report errors or retry', async () => {
+      const signals: AbortSignal[] = [];
+      (fetch as jest.Mock).mockImplementation((_url: string, { signal }: RequestInit) => {
+        signals.push(signal!);
+        return new Promise((_resolve, reject) => signal?.addEventListener('abort', () =>
+          reject(new DOMException('Aborted', 'AbortError')), { once: true }));
+      });
+      const { unmount } = renderHook(() => useMapData());
+      await act(async () => { unmount(); });
+      expect(signals.every(signal => signal.aborted)).toBe(true);
+      await act(async () => { jest.advanceTimersByTime(60_000); });
+      expect(fetch).toHaveBeenCalledTimes(5);
+      expect(console.error).not.toHaveBeenCalled();
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    test('unmount during backoff cancels the scheduled automatic retry', async () => {
+      (fetch as jest.Mock).mockRejectedValue(new TypeError('Failed to fetch'));
+      const { unmount } = renderHook(() => useMapData());
+      await act(async () => {});
+      expect(jest.getTimerCount()).toBe(1);
+      unmount();
+      await act(async () => { jest.advanceTimersByTime(60_000); });
+      expect(fetch).toHaveBeenCalledTimes(5);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+
+    test('failed region load aborts siblings and superseded regions cannot replace a recovery', async () => {
+      const originalFetch = (fetch as jest.Mock).getMockImplementation()!;
+      const pending: { resolve: (response: unknown) => void; signal: AbortSignal; slug: string }[] = [];
+      (fetch as jest.Mock).mockImplementation((url: string, options: RequestInit) => {
+        const match = url.match(/(west|north|east|south)\.geojson/);
+        if (!match) return originalFetch(url, options);
+        return new Promise(resolve => pending.push({ resolve, signal: options.signal!, slug: match[1] }));
+      });
+      const { result } = renderHook(() => useMapData());
+      await act(async () => {});
+      (fetch as jest.Mock).mockImplementation(originalFetch);
+      await act(async () => { result.current.loadTxhsaRegions(); });
+      expect(pending.every(request => request.signal.aborted)).toBe(true);
+      await act(async () => {
+        pending.forEach(request => request.resolve({ ok: true, json: async () => ({ features: [] }) }));
+      });
+      expect(result.current.txhsaRegions).toHaveLength(4);
+      expect(result.current.regionsError).toBeNull();
+      const signals: AbortSignal[] = [];
+      (fetch as jest.Mock).mockImplementation((url: string, options: RequestInit) => {
+        signals.push(options.signal!);
+        return url.includes('east') ? Promise.resolve({ ok: false, status: 503 }) : new Promise(() => {});
+      });
+      await act(async () => { result.current.loadTxhsaRegions(); });
+      expect(signals.every(signal => signal.aborted)).toBe(true);
+      expect(result.current.regionsError).toContain('HTTP 503');
+      expect(result.current.txhsaRegions).toEqual([]);
+      expect(result.current.headStartPrograms).toHaveLength(2);
+      expect(jest.getTimerCount()).toBe(0);
+    });
+  });
 });

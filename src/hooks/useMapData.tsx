@@ -39,20 +39,32 @@ const useMapDataInternal = () => {
   // Track in-flight controllers and retry timers so the unmount effect can
   // abort outstanding requests and cancel pending retries -- prevents
   // setState-on-unmounted-component warnings and orphaned retry chains.
-  const inFlightControllersRef = useRef<Set<AbortController>>(new Set());
+  const programsRequestRef = useRef<AbortController | null>(null);
+  const regionsRequestRef = useRef<AbortController | null>(null);
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleLayer = useCallback((layer: keyof LayerVisibility) => {
     setLayerVisibility(prev => ({ ...prev, [layer]: !prev[layer] }));
   }, []);
 
-  const loadHeadStartPrograms = useCallback(async () => {
+  const loadHeadStartPrograms = useCallback(async (automaticRetry = false) => {
+    if (retryTimerRef.current !== null) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    if (!automaticRetry) programsRetryRef.current = 0;
+    programsRequestRef.current?.abort();
     setIsLoadingPrograms(true);
     setProgramsError(null);
 
     const controller = new AbortController();
-    inFlightControllersRef.current.add(controller);
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    programsRequestRef.current = controller;
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, FETCH_TIMEOUT_MS);
+    controller.signal.addEventListener('abort', () => clearTimeout(timeoutId), { once: true });
 
     try {
       const response = await fetch('/assets/geojson/headStartPrograms.json', { signal: controller.signal });
@@ -76,16 +88,17 @@ const useMapDataInternal = () => {
         throw new Error('No valid Head Start programs found in the data');
       }
 
+      if (controller.signal.aborted) return;
       setHeadStartPrograms(transformedPrograms);
       programsRetryRef.current = 0;
     } catch (error) {
-      // Caller aborted (unmount or component-driven cancel); do not surface
-      // an error or schedule a retry.
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      if (programsRequestRef.current !== controller || (controller.signal.aborted && !timedOut)) {
         return;
       }
       console.error('Error loading Head Start programs:', error);
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (timedOut) {
+        setProgramsError('Loading Head Start programs timed out. Please check your connection and retry.');
+      } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         setProgramsError('Network error: Unable to load Head Start programs data. Please check your internet connection.');
       } else if (error instanceof SyntaxError) {
         setProgramsError('Data format error: The Head Start programs data is not in a valid format.');
@@ -95,12 +108,13 @@ const useMapDataInternal = () => {
       if (programsRetryRef.current < MAX_RETRY_ATTEMPTS) {
         const attempt = programsRetryRef.current;
         programsRetryRef.current += 1;
-        retryTimerRef.current = setTimeout(() => loadHeadStartPrograms(), 1000 * Math.pow(2, attempt));
+        retryTimerRef.current = setTimeout(() => loadHeadStartPrograms(true), 1000 * Math.pow(2, attempt));
       }
     } finally {
       clearTimeout(timeoutId);
-      inFlightControllersRef.current.delete(controller);
-      setIsLoadingPrograms(false);
+      if (programsRequestRef.current === controller && (!controller.signal.aborted || timedOut)) {
+        setIsLoadingPrograms(false);
+      }
     }
   }, []);
 
@@ -110,12 +124,19 @@ const useMapDataInternal = () => {
    * (R4: regions must collectively cover Texas with no gaps).
    */
   const loadTxhsaRegions = useCallback(async () => {
+    regionsRequestRef.current?.abort();
     setIsLoadingRegions(true);
     setRegionsError(null);
+    setTxhsaRegions([]);
 
     const controller = new AbortController();
-    inFlightControllersRef.current.add(controller);
-    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    regionsRequestRef.current = controller;
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, FETCH_TIMEOUT_MS);
+    controller.signal.addEventListener('abort', () => clearTimeout(timeoutId), { once: true });
 
     try {
       const slugs = TXHSA_REGION_NAMES.map(n => n.toLowerCase());
@@ -132,38 +153,42 @@ const useMapDataInternal = () => {
         }
         return processTxhsaRegion(feature);
       }));
-      setTxhsaRegions(results);
+      if (!controller.signal.aborted) setTxhsaRegions(results);
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') {
+      if (regionsRequestRef.current !== controller || (controller.signal.aborted && !timedOut)) {
         return;
       }
       console.error('Error loading TXHSA regions:', error);
-      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      if (timedOut) {
+        setRegionsError('Loading TXHSA regions timed out. Please check your connection and retry.');
+      } else if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         setRegionsError('Network error: Unable to load TXHSA region data. Please check your internet connection.');
       } else {
         setRegionsError(`Failed to load TXHSA regions: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
       setTxhsaRegions([]);
+      setLayerVisibility(prev => ({ ...prev, txhsaRegions: false }));
     } finally {
       clearTimeout(timeoutId);
-      inFlightControllersRef.current.delete(controller);
-      setIsLoadingRegions(false);
+      if (regionsRequestRef.current === controller && (!controller.signal.aborted || timedOut)) {
+        setIsLoadingRegions(false);
+        // Abort siblings when one region fails; never retain a partial load.
+        controller.abort();
+      }
     }
   }, []);
 
   useEffect(() => {
     loadHeadStartPrograms();
     loadTxhsaRegions();
-    // Capture the ref containers at effect-run time so the cleanup closes
-    // over the same Set / timer reference even if a later render mutates
-    // the refs (satisfies react-hooks/exhaustive-deps for refs).
-    const controllers = inFlightControllersRef.current;
+    const programsRef = programsRequestRef;
+    const regionsRef = regionsRequestRef;
     const timerRef = retryTimerRef;
     return () => {
-      for (const controller of controllers) {
-        controller.abort();
-      }
-      controllers.clear();
+      programsRef.current?.abort();
+      regionsRef.current?.abort();
+      programsRef.current = null;
+      regionsRef.current = null;
       if (timerRef.current !== null) {
         clearTimeout(timerRef.current);
         timerRef.current = null;

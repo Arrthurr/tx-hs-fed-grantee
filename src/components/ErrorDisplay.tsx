@@ -14,21 +14,23 @@ interface ErrorDisplayProps {
   errorType?: 'api' | 'data' | 'general';
   /** Additional details about the error */
   details?: string;
+  /** Label for the recovery action */
+  retryLabel?: string;
 }
 
 const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ 
   error, 
   onRetry,
   errorType = 'general',
-  details
+  details,
+  retryLabel = 'Retry Loading'
 }) => {
   /**
    * Determine if this is an API key related error
    */
-  const isApiKeyError = errorType === 'api' || 
-                       error.toLowerCase().includes('api key') || 
-                       error.toLowerCase().includes('invalid') ||
-                       error.toLowerCase().includes('not configured');
+  const isApiKeyError = (errorType === 'api' && !onRetry) ||
+                       (errorType !== 'data' && (error.toLowerCase().includes('api key') ||
+                       error.toLowerCase().includes('not configured')));
 
   /**
    * Determine if this is a domain restriction error
@@ -42,9 +44,8 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
    * Determine if this is a data loading error
    */
   const isDataError = errorType === 'data' ||
-                     error.toLowerCase().includes('geojson') ||
-                     error.toLowerCase().includes('data') ||
-                     error.toLowerCase().includes('load');
+                     (errorType === 'general' && (error.toLowerCase().includes('geojson') ||
+                     error.toLowerCase().includes('data')));
 
   return (
     <div className="absolute inset-0 bg-gradient-to-br from-tx-error-50 via-white to-tx-orange-50 flex items-center justify-center z-10" role="alert" aria-live="assertive">
@@ -74,9 +75,12 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
         
         {/* Error details (if provided) */}
         {details && (
-          <div className="bg-tx-gray-50 p-3 rounded-md mb-6 text-sm text-tx-gray-600 max-h-32 overflow-y-auto">
+          <details className="mb-4 text-sm text-tx-gray-600">
+            <summary className="cursor-pointer">Technical details</summary>
+            <div className="bg-tx-gray-50 p-3 rounded-md max-h-32 overflow-y-auto">
             <code className="whitespace-pre-wrap">{details}</code>
-          </div>
+            </div>
+          </details>
         )}
         
         {/* Action buttons */}
@@ -85,13 +89,16 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
             <button
               onClick={onRetry}
               className="w-full btn-primary flex items-center justify-center space-x-2"
-              aria-label="Retry loading map"
+              aria-label={retryLabel === 'Retry Loading' ? 'Retry loading map' : retryLabel}
             >
               <RefreshCw className="w-4 h-4" aria-hidden="true" />
-              <span>Retry Loading</span>
+              <span>{retryLabel}</span>
             </button>
           )}
-          
+        </div>
+        <details className="mt-4">
+          <summary className="cursor-pointer text-sm text-tx-gray-600">Site administrator guidance</summary>
+          <div className="space-y-3 mt-3">
           {/* Google Cloud Console link for API key errors */}
           {isApiKeyError && (
             <a
@@ -211,6 +218,7 @@ const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
             </ul>
           )}
         </div>
+        </details>
       </div>
     </div>
   );

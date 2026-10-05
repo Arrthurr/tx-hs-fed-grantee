@@ -223,6 +223,8 @@ describe('TexasMap Component', () => {
     mockUseMapData.mockReturnValue({
       ...mockUseMapData(),
       isLoading: true,
+      isLoadingPrograms: true,
+      headStartPrograms: [],
     });
     
     render(<TexasMapWithProvider />);
@@ -237,12 +239,34 @@ describe('TexasMap Component', () => {
       ...mockUseMapData(),
       hasErrors: true,
       programsError: 'Failed to load programs',
+      headStartPrograms: [],
     });
     
     render(<TexasMapWithProvider />);
     
     // Check if error display is shown
     expect(screen.getByRole('alert')).toBeInTheDocument();
+  });
+
+  test('slow optional regions leave the program map and search available', () => {
+    mockUseMapData.mockReturnValue({ ...mockUseMapData(), isLoading: true, isLoadingRegions: true });
+    render(<TexasMapWithProvider />);
+    expect(screen.getByTestId('google-map')).toBeInTheDocument();
+    expect(screen.getAllByTestId('advanced-marker')).toHaveLength(2);
+    expect(screen.getByRole('status')).toHaveTextContent('Loading TXHSA regions');
+    expect(screen.getByLabelText('Toggle TXHSA Regions layer')).toBeDisabled();
+  });
+
+  test('region failure is announced with retry without hiding programs', () => {
+    const retry = jest.fn();
+    mockUseMapData.mockReturnValue({ ...mockUseMapData(), regionsError: 'Region boundaries unavailable', loadTxhsaRegions: retry });
+    render(<TexasMapWithProvider />);
+    expect(screen.getByTestId('google-map')).toBeInTheDocument();
+    expect(screen.getAllByTestId('advanced-marker')).toHaveLength(2);
+    expect(screen.getByRole('alert')).toHaveTextContent('Region boundaries unavailable');
+    expect(screen.getByLabelText('Toggle TXHSA Regions layer')).toBeDisabled();
+    fireEvent.click(screen.getByRole('button', { name: 'Retry TXHSA regions' }));
+    expect(retry).toHaveBeenCalledTimes(1);
   });
 
   test('calls toggleLayer when layer controls are used', () => {
@@ -265,6 +289,7 @@ describe('TexasMap Component', () => {
     const toggleLayerMock = jest.fn();
     mockUseMapData.mockReturnValue({
       ...mockUseMapData(),
+      txhsaRegions: [{ name: 'West', feature: { type: 'Feature', properties: { name: 'West' }, geometry: { type: 'Polygon', coordinates: [] } } }],
       toggleLayer: toggleLayerMock,
     } as any);
 
