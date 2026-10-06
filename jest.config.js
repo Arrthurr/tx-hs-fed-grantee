@@ -1,6 +1,8 @@
 export default {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
+  // Sandbox/CI runners often cannot reach user-level Watchman state.
+  watchman: false,
   setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.(ts|tsx|js)',
@@ -22,11 +24,11 @@ export default {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       useESM: false,
-      isolatedModules: true,
       tsconfig: {
         jsx: 'react-jsx',
         esModuleInterop: true,
         allowSyntheticDefaultImports: true,
+        isolatedModules: true,
         target: 'ES2020',
         module: 'ES2020',
         lib: ['ES2020', 'DOM', 'DOM.Iterable'],

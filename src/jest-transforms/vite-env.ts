@@ -23,8 +23,8 @@
 export const name = 'vite-env-transformer';
 export const version = 1;
 
-// Real runtime import — `import type` would be stripped by ts-jest's
-// isolatedModules transpile, leaving `ts.` references undefined at runtime.
+// Real runtime import — `import type` would be stripped when TypeScript
+// isolatedModules transpile runs, leaving `ts.` references undefined at runtime.
 import * as ts from 'typescript';
 
 /**

@@ -37,11 +37,12 @@ export default defineConfig({
   },
   // Enable asset optimization
   assetsInclude: ['**/*.geojson'],
-  // Configure server
+  // Dev server stays loopback-only. Do not pass `--host` / `server.host`
+  // unless you also restrict `server.fs` and treat the process as exposed.
+  // `cors: true` is Vite's default and only applies to this local server.
   server: {
-    // Enable compression
+    host: '127.0.0.1',
     cors: true,
-    // Preload assets
     headers: {
       'Cache-Control': 'public, max-age=31536000',
     },

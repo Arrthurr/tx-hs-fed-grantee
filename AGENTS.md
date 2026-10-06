@@ -23,6 +23,7 @@ npm run preview        # Preview production build
 npm run lint           # ESLint
 npm run typecheck      # TypeScript app + node configs
 npm test               # Jest unit tests
+npm run test:advisories  # High/critical npm advisory gate
 npm run test:e2e       # Playwright loading recovery and map accessibility
 npm run test:e2e:ui    # Playwright UI mode
 ```
@@ -51,6 +52,7 @@ VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
 - Files under `public/` are publicly served; keep sensitive data out of static
   assets, including JSON and GeoJSON.
 - Serve production over HTTPS and keep dependencies updated for security fixes.
+- Advisory ownership, cadence, and remaining exceptions live in `docs/security/advisory-review.md`. Do not run `npm audit fix --force`.
 
 ## Architecture and Navigation
 
@@ -195,15 +197,15 @@ npm test -- src/components/TexasMap.test.tsx
 npm test -- --coverage
 ```
 
-If Watchman cannot access user-level state in a sandbox, add `--watchman=false`.
-For application changes, run relevant tests, lint, typecheck, and production
-build. CI runs these checks, including the full Jest suite.
+Jest is configured with `watchman: false`. For application changes, run
+relevant tests, lint, typecheck, and production build. CI runs these checks,
+including the full Jest suite and `npm run test:advisories`.
 
 For TXHSA region changes, run at least:
 
 ```bash
 npm run build:regions
-npm test -- --watchman=false scripts/__tests__/build-txhsa-regions.test.ts src/hooks/useMapData.test.ts
+npm test -- scripts/__tests__/build-txhsa-regions.test.ts src/hooks/useMapData.test.ts
 npm run typecheck
 npm run lint
 npm run build

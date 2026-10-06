@@ -1,6 +1,6 @@
-# CI: lint, typecheck, unit tests, committed-data invariants, production
-# build, and deterministic Playwright coverage on every pull request and on
-# pushes to main.
+# CI: advisory review, lint, typecheck, unit tests, committed-data
+# invariants, production build, and deterministic Playwright coverage on
+# every pull request and on pushes to main.
 #
 # Browser tests intercept the Google Maps SDK with a checked-in test double
 # and start Vite with a synthetic non-credential key. They never contact
@@ -35,6 +35,9 @@ jobs:
           cache: 'npm'
 
       - run: npm ci
+
+      - name: Advisory review
+        run: npm run test:advisories
 
       - name: Lint
         run: npm run lint

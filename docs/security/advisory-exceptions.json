@@ -1,0 +1,11 @@
+[
+  {
+    "id": "GHSA-vfj7-8cjw-p6xm",
+    "package": "braces",
+    "severity": "high",
+    "scope": "development",
+    "rationale": "No patched braces release exists (advisory range <=3.0.3, latest 3.0.3). npm audit proposes Tailwind CSS 4 as the parent fix. This app stays on Tailwind 3 because a v4 migration changes the styling toolchain and is out of scope. braces is used only through Tailwind/chokidar/micromatch file watching and glob expansion during local CSS builds, not in the production bundle or against untrusted pattern input. Revisit when braces publishes a patch or when a Tailwind 4 migration is planned.",
+    "owner": "Arrthurr",
+    "reviewBy": "2027-01-04"
+  }
+]

@@ -92,6 +92,7 @@ npm run dev            # Start Vite dev server
 npm run build          # Production build
 npm run build:regions  # Regenerate committed TXHSA region GeoJSON
 npm run test:data      # Check committed data and deterministic region generation
+npm run test:advisories  # High/critical npm advisory gate
 npm run preview        # Preview production build
 npm run lint           # ESLint
 npm run typecheck      # TypeScript app + node configs
@@ -100,12 +101,14 @@ npm run test:e2e       # Playwright SDK-double suite (CI)
 npm run test:e2e:ui    # Playwright UI mode
 ```
 
-If Jest fails because Watchman cannot access user-level state in a sandbox, run
-tests with `--watchman=false`:
+Jest is configured with `watchman: false` so sandbox and CI runs do not depend
+on user-level Watchman state.
 
-```bash
-npm test -- --watchman=false
-```
+Dependency advisories: production (`npm audit --omit=dev`) must stay clean.
+High and critical development findings need a compatible update or a dated
+exception in [`docs/security/advisory-exceptions.json`](docs/security/advisory-exceptions.json).
+See [`docs/security/advisory-review.md`](docs/security/advisory-review.md). Do
+not run `npm audit fix --force`.
 
 ## Project Structure
 
@@ -228,7 +231,7 @@ npm run test:data
 Run focused region tests:
 
 ```bash
-npm test -- --watchman=false scripts/__tests__/build-txhsa-regions.test.ts src/hooks/useMapData.test.ts
+npm test -- scripts/__tests__/build-txhsa-regions.test.ts src/hooks/useMapData.test.ts
 ```
 
 Run typecheck, lint, and production build:

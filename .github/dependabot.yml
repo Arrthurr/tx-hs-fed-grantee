@@ -1,0 +1,31 @@
+# Weekly npm and Actions update PRs are the recurring advisory review.
+# Do not auto-merge; each PR still needs audit, tests, and exception updates.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    groups:
+      jest-toolchain:
+        patterns:
+          - jest
+          - jest-environment-jsdom
+          - ts-jest
+          - '@types/jest'
+      eslint-toolchain:
+        patterns:
+          - eslint
+          - '@eslint/js'
+          - typescript-eslint
+          - eslint-plugin-react-hooks
+          - eslint-plugin-react-refresh
+          - globals
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
