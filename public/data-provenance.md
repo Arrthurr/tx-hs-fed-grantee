@@ -89,8 +89,9 @@ These additional overrides likewise have no documented external TXHSA approval.
 Counts use each distinct listed location's coordinates, not address/county text.
 Outer polygon boundaries are included, holes and their boundaries excluded.
 A shared outer edge can match two regions: counts are withheld on any zero or
-multiple match rather than selecting the first. A future boundary exception
-requires a documented source-backed location/county decision.
+multiple match rather than selecting the first. This is the documented
+boundary policy; a future exception requires a source-backed location/county
+decision, not array-order assignment.
 
 CI checks all 254 county names against the lookup, unique assignments, structural
 geometry validity (finite bounded coordinates, closed rings), exact regenerated

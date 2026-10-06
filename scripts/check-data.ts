@@ -3,43 +3,27 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { buildTxhsaRegions } from './build-txhsa-regions';
+import {
+  COMMITTED_COUNTY_COUNT,
+  assertCountySourceInvariants,
+  assertGeneratedMatchesCommitted,
+  countLocationsByRegion,
+  countyNamesFromSource,
+  loadCommittedRegions,
+} from './dataIntegrity';
 import { processHeadStartPrograms, validateHeadStartProgram } from '../src/data/headStartPrograms';
-import { TXHSA_REGION_NAMES, validateTxhsaRegion } from '../src/data/txhsaRegions';
-import { tdemCountyRegions, tdemToTxhsaRegion, txhsaCountyOverrides } from '../src/data/tdemCountyRegions';
-import { isPointInPolygon, isValidPolygonGeometry } from '../src/utils/geometry';
+import { tdemCountyRegions, txhsaCountyOverrides } from '../src/data/tdemCountyRegions';
 import type { RawHeadStartProgram } from '../src/data/headStartPrograms';
-import type { TxhsaRegionFeature, TxhsaRegionName } from '../src/types/maps';
 
 const readJson = (file: string) => JSON.parse(readFileSync(file, 'utf8'));
 const counties = readJson('scripts/source/tx-counties.geojson');
-assert.equal(counties.type, 'FeatureCollection');
-const countyNames = counties.features.map((feature: { properties: { COUNTY: string }; geometry: unknown }) => {
-  assert.ok(isValidPolygonGeometry(feature.geometry), `Invalid geometry: ${feature.properties.COUNTY}`);
-  return feature.properties.COUNTY.replace(/ County$/, '').trim();
-});
-assert.equal(countyNames.length, 254);
-assert.equal(new Set(countyNames).size, 254, 'Duplicate county names');
-assert.deepEqual([...countyNames].sort(), Object.keys(tdemCountyRegions).sort(), 'County/lookup coverage mismatch');
-for (const name of countyNames) {
-  const tdem = tdemCountyRegions[name];
-  assert.ok(Number.isInteger(tdem) && tdem >= 1 && tdem <= 8, `Invalid TDEM assignment: ${name}`);
-  assert.ok(TXHSA_REGION_NAMES.includes(txhsaCountyOverrides[name] ?? tdemToTxhsaRegion[tdem]));
-}
+const countyNames = countyNamesFromSource(counties);
+assertCountySourceInvariants(countyNames, tdemCountyRegions, txhsaCountyOverrides);
 
 const generated = buildTxhsaRegions({ write: false });
-assert.equal(Object.values(generated.countyCounts).reduce((a, b) => a + b, 0), 254);
-const regions: TxhsaRegionFeature[] = TXHSA_REGION_NAMES.map(name => {
-  const file = `public/assets/txhsa-geojson/${name.toLowerCase()}.geojson`;
-  // Byte comparison catches output drift as well as geometric differences.
-  assert.equal(readFileSync(file, 'utf8'), JSON.stringify(generated.regions[name]), `Regenerate ${file}`);
-  const collection = readJson(file);
-  assert.equal(collection.type, 'FeatureCollection');
-  assert.equal(collection.features.length, 1);
-  const feature = collection.features[0];
-  assert.ok(validateTxhsaRegion(feature), `Invalid region: ${name}`);
-  assert.equal(feature.properties.name, name);
-  return feature;
-});
+assert.equal(Object.values(generated.countyCounts).reduce((a, b) => a + b, 0), COMMITTED_COUNTY_COUNT);
+assertGeneratedMatchesCommitted(generated);
+const regions = loadCommittedRegions();
 
 const raw: RawHeadStartProgram[] = readJson('public/assets/geojson/headStartPrograms.json');
 const metadata = readJson('public/assets/geojson/headStartPrograms.metadata.json');
@@ -73,19 +57,14 @@ assert.equal(raw[firstDuplicate].name, metadata.exactDuplicate.name);
 assert.equal(new Set(locations.map(location => location.id)).size, locations.length);
 assert.deepEqual(processHeadStartPrograms([...raw].reverse()).map(location => location.id).sort(),
   locations.map(location => location.id).sort());
-const counts: Record<TxhsaRegionName, number> = { West: 0, North: 0, East: 0, South: 0 };
 for (const location of locations) {
   assert.ok(validateHeadStartProgram(location));
   assert.equal(location.type, 'unknown');
   assert.equal(location.grantee, undefined);
   assert.equal(location.funding, undefined);
-  const matches = regions.filter(region => isPointInPolygon(location.lat, location.lng, region.geometry));
-  assert.equal(matches.length, 1, `${location.name} matches ${matches.length} regions`);
-  counts[matches[0].properties.name] += 1;
 }
+const counts = countLocationsByRegion(locations, regions);
 assert.equal(Object.values(counts).reduce((a, b) => a + b, 0), locations.length);
-// Deliberate snapshot gate: changes require count/provenance review, not silent drift.
-assert.equal(raw.length, 86);
-assert.equal(locations.length, 85);
+// Reviewed snapshot, not an immutable census. Update provenance with corrections.
 assert.deepEqual(counts, { West: 14, North: 23, East: 28, South: 20 });
-console.log('Data integrity passed:', { rows: raw.length, locations: locations.length, counties: 254, counts });
+console.log('Data integrity passed:', { rows: raw.length, locations: locations.length, counties: COMMITTED_COUNTY_COUNT, counts });

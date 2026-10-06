@@ -43,17 +43,32 @@ describe('isPointInSinglePolygon', () => {
     expect(isPointInSinglePolygon(0.1, 0.4, withHole)).toBe(false);
     expect(isPointInMultiPolygon(0.3, 0.4, [withHole])).toBe(false);
   });
+
+  it('counts a shared outer edge as inside both polygons so callers must resolve overlaps', () => {
+    const west: number[][][] = [[[-2, 0], [0, 0], [0, 2], [-2, 2], [-2, 0]]];
+    const east: number[][][] = [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]];
+    expect(isPointInSinglePolygon(1, 0, west)).toBe(true);
+    expect(isPointInSinglePolygon(1, 0, east)).toBe(true);
+  });
 });
 
 describe('isValidPolygonGeometry', () => {
   it('rejects open, degenerate, non-finite and malformed rings', () => {
     expect(isValidPolygonGeometry({ type: 'Polygon', coordinates: unitSquare })).toBe(true);
+    expect(isValidPolygonGeometry({ type: 'MultiPolygon', coordinates: twoSquares })).toBe(true);
     for (const coordinates of [
       [unitSquare[0].slice(0, -1)], [[]], [[[-1, -1], [-1, -1], [-1, -1], [-1, -1]]],
       [[[NaN, 0], [1, 0], [1, 1], [NaN, 0]]], [[null]],
+      [[[181, 0], [1, 0], [1, 1], [181, 0]]],
+      [[[0, 91], [1, 0], [1, 1], [0, 91]]],
+      [[[Infinity, 0], [1, 0], [1, 1], [Infinity, 0]]],
     ]) {
       expect(isValidPolygonGeometry({ type: 'Polygon', coordinates })).toBe(false);
     }
+    expect(isValidPolygonGeometry({
+      type: 'MultiPolygon',
+      coordinates: [[unitSquare[0].slice(0, -1)]],
+    })).toBe(false);
   });
 });
 

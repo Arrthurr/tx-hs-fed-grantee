@@ -28,8 +28,8 @@ export const isPointInSinglePolygon = (
 ): boolean => {
   if (!coordinates || coordinates.length === 0) return false;
   // Closed outer boundaries belong to the polygon; holes (including their
-  // boundaries) do not. Shared region edges therefore match both regions and
-  // must be resolved explicitly, never by array order.
+  // boundaries) do not. Shared region edges therefore match both regions.
+  // Callers must withhold or explicitly decide overlaps; never use array order.
   return isPointInRing(lat, lng, coordinates[0]) &&
     !coordinates.slice(1).some(ring => isPointInRing(lat, lng, ring));
 };

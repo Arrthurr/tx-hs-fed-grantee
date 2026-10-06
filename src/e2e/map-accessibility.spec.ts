@@ -1,7 +1,6 @@
 import { test, expect, type Page, type Locator } from '@playwright/test';
-import { readFileSync } from 'node:fs';
+import { interceptMapsSdk } from './helpers/mapsSdk';
 
-const sdk = readFileSync('src/e2e/fixtures/maps-sdk.js', 'utf8');
 const programName = 'Accessibility Houston Community Action Head Start and Early Childhood Location';
 const address = '12345 Long Community Center Boulevard, Suite 200, Houston, TX 77002';
 
@@ -9,8 +8,7 @@ const address = '12345 Long Community Center Boulevard, Suite 200, Houston, TX 7
 test.use({ hasTouch: true });
 
 test.beforeEach(async ({ page }) => {
-  await page.route('https://maps.googleapis.com/maps/api/js?*', route =>
-    route.fulfill({ contentType: 'application/javascript', body: sdk }));
+  await interceptMapsSdk(page);
   await page.route('**/assets/geojson/headStartPrograms.json', route => route.fulfill({ json: [
     { name: programName, address, coordinates: { lat: 29.7604, lng: -95.3698 } },
     { name: 'Accessibility El Paso', address: 'El Paso, TX', coordinates: { lat: 31.7619, lng: -106.485 } },

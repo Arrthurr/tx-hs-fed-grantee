@@ -145,8 +145,10 @@ minified coordinate diffs alone.
   loading rather than rendering a partial overlay.
 - `regionProgramCounts` is memoized and remains `null` while either dataset is
   empty. Counts are independent of layer visibility and search.
-- Assign each program by coordinates to the first matching region in West,
-  North, East, South order. Unmatched programs are omitted with console warnings.
+- Assign each program by coordinates. Counts are published only when every
+  accepted program matches exactly one region. Zero or multiple matches
+  (including shared outer edges) withhold all counts. Do not resolve
+  overlaps by West/North/East/South array order.
 - Overrides affect counts through generated county geometry, not program county
   labels; they are not program-level exceptions.
 - Region info windows show name, program count, and total funded amount.
@@ -212,9 +214,11 @@ program details, and the TXHSA Regions toggle, overlays, region buttons and deta
 Check focus return, fullscreen selection and resizing. Use a valid Google Maps API
 key for live-map checks.
 
-Playwright covers loading recovery and map accessibility with an SDK test double;
-CI omits E2E. Read `src/e2e/README.md` before adding tests. Use current UI
-selectors, not removed controls or nonexistent mock hooks. Playwright can start Vite.
+Playwright covers loading recovery, map accessibility, and directory chrome
+with an SDK test double. CI runs that suite on Chromium. Live Google Maps
+smoke is opt-in via `LIVE_GOOGLE_MAPS=1` and is not a CI secret consumer.
+Read `src/e2e/README.md` before adding tests. Use current UI selectors, not
+removed controls or nonexistent mock hooks. Playwright can start Vite.
 
 Existing `useMapData.test.ts` React `act(...)` warnings may occur. Distinguish
 them from new regressions; passing tests do not imply warnings were resolved.

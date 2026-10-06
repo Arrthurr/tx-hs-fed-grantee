@@ -76,7 +76,9 @@ No database or user authentication is required for setup. Configure
 `VITE_GOOGLE_MAPS_API_KEY` (and optionally `VITE_GOOGLE_MAPS_MAP_ID`) through
 Amp project secrets/environment or a local `.env.local`; setup never writes
 credentials. Unit tests and builds do not require a Maps key.
-Playwright browsers are not installed because no E2E tests are checked in.
+Playwright browsers are not installed during setup. Install Chromium with
+`npx playwright install chromium` before `npm run test:e2e`. Deterministic
+browser tests intercept the Maps SDK and do not need a live key.
 
 These lifecycle files must reach the project's default branch before new orbs
 use them. Exact snapshots skip setup; stale snapshots rerun the fast install
@@ -94,7 +96,7 @@ npm run preview        # Preview production build
 npm run lint           # ESLint
 npm run typecheck      # TypeScript app + node configs
 npm test               # Jest unit tests
-npm run test:e2e       # Playwright, currently no checked-in tests
+npm run test:e2e       # Playwright SDK-double suite (CI)
 npm run test:e2e:ui    # Playwright UI mode
 ```
 
@@ -115,7 +117,7 @@ src/
   utils/          Geometry and map helpers
   types/          Shared TypeScript types
   styles/         Design-system CSS
-  e2e/            E2E notes; no checked-in Playwright specs currently
+  e2e/            Playwright specs: SDK-double suite plus opt-in live smoke
 
 scripts/
   build-txhsa-regions.ts
@@ -237,8 +239,11 @@ npm run lint
 npm run build
 ```
 
-Playwright infrastructure is present, but no E2E specs are checked in. See
-`src/e2e/README.md` before adding a new suite.
+Playwright's default suite intercepts the Google Maps SDK and runs in CI.
+It covers initialization, search/details, layer toggles, region failure/retry,
+and mobile details. A live Google Maps smoke test is opt-in
+(`LIVE_GOOGLE_MAPS=1`) and is not run in CI, including on fork PRs.
+See `src/e2e/README.md`.
 
 ## Development Notes
 

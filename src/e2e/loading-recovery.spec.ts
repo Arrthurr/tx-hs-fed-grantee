@@ -1,11 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync } from 'node:fs';
-
-const sdk = readFileSync('src/e2e/fixtures/maps-sdk.js', 'utf8');
+import { interceptMapsSdk, mapsSdkSource } from './helpers/mapsSdk';
 
 test.beforeEach(async ({ page }) => {
-  await page.route('https://maps.googleapis.com/maps/api/js?*', route =>
-    route.fulfill({ contentType: 'application/javascript', body: sdk }));
+  await interceptMapsSdk(page);
   await page.route('**/assets/geojson/headStartPrograms.json', route => route.fulfill({ json: [
     { name: 'Recovery Test Austin', address: 'Austin, TX', coordinates: { lat: 30.2672, lng: -97.7431 } },
     { name: 'Recovery Test Houston', address: 'Houston, TX', coordinates: { lat: 29.7604, lng: -95.3698 } },
@@ -69,7 +66,7 @@ test('slow optional data leaves the map, markers and search usable', async ({ pa
 test('transient SDK failure offers reload and recovers on a fresh page', async ({ page }) => {
   let fail = true;
   await page.route('https://maps.googleapis.com/maps/api/js?*', route => fail
-    ? route.abort('failed') : route.fulfill({ contentType: 'application/javascript', body: sdk }));
+    ? route.abort('failed') : route.fulfill({ contentType: 'application/javascript', body: mapsSdkSource }));
   await page.goto('/');
   await expect(page.getByRole('alert')).toContainText('Google Maps could not be loaded');
   fail = false;

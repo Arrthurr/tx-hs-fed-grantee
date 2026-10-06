@@ -1,11 +1,12 @@
-# CI: lint, typecheck, unit tests, and production build on every pull request
-# and on pushes to main. Prevents regressions (e.g. a failing lint or build)
-# from landing on main.
+# CI: lint, typecheck, unit tests, committed-data invariants, production
+# build, and deterministic Playwright coverage on every pull request and on
+# pushes to main.
 #
-# E2E (Playwright) is intentionally omitted: the suite is currently out of
-# sync with the UI and needs a live Google Maps API key + dev server.
-# Re-enable it once the suite is reconciled and a VITE_GOOGLE_MAPS_API_KEY
-# secret is configured.
+# Browser tests intercept the Google Maps SDK with a checked-in test double
+# and start Vite with a synthetic non-credential key. They never contact
+# Google and never receive repository secrets. Live Google Maps smoke is
+# opt-in locally (`LIVE_GOOGLE_MAPS=1`) and is not run here, including on
+# fork pull requests.
 
 name: CI
 
@@ -49,3 +50,35 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  e2e:
+    name: playwright (sdk double)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Deterministic browser tests
+        run: npm run test:e2e
+        env:
+          CI: true
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
