@@ -1,6 +1,6 @@
 /// <reference types="@testing-library/jest-dom" />
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import TexasMap from './TexasMap';
 import { useMapData } from '../hooks/useMapData';
 import { processHeadStartPrograms } from '../data/headStartPrograms';
@@ -20,9 +20,6 @@ jest.mock('@vis.gl/react-google-maps', () => ({
     <div data-testid="advanced-marker" onClick={onClick}>{children}</div>
   ),
   Pin: () => <div data-testid="map-pin" />,
-  InfoWindow: ({ children, onCloseClick }: { children: React.ReactNode; onCloseClick?: () => void }) => (
-    <div data-testid="info-window" onClick={onCloseClick}>{children}</div>
-  ),
   useMap: jest.fn().mockReturnValue({
     panTo: jest.fn(),
     setZoom: jest.fn(),
@@ -64,8 +61,10 @@ const mockUseMapData = useMapData as jest.MockedFunction<typeof useMapData>;
 
 // Mock environment variables
 const originalEnv = process.env;
+const originalScrollIntoView = Element.prototype.scrollIntoView;
 
 beforeAll(() => {
+  Element.prototype.scrollIntoView = jest.fn();
   process.env = {
     ...originalEnv,
     VITE_GOOGLE_MAPS_API_KEY: 'test-api-key',
@@ -73,6 +72,7 @@ beforeAll(() => {
 });
 
 afterAll(() => {
+  Element.prototype.scrollIntoView = originalScrollIntoView;
   process.env = originalEnv;
 });
 
@@ -153,17 +153,33 @@ describe('TexasMap Component', () => {
     expect(markers.length).toBe(0);
   });
 
-  test('renders info window when a program is selected', async () => {
+  test('renders details when a program is selected', async () => {
     render(<TexasMapWithProvider />);
     
     // Find a marker and click it
     const markers = screen.getAllByTestId('advanced-marker');
     fireEvent.click(markers[0]);
     
-    // Check if info window is rendered
+    // Details are outside the map surface.
     await waitFor(() => {
-      expect(screen.getByTestId('info-window')).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: 'Test Program 1' })).toBeInTheDocument();
     });
+  });
+
+  test('selection replaces results with focused details and closing restores the selected result', async () => {
+    render(<TexasMapWithProvider />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search Head Start programs' }), { target: { value: 'Test Program' } });
+    const result = screen.getByRole('button', { name: 'View Test Program 2' });
+    screen.getByRole('textbox').focus();
+    fireEvent.click(result);
+    const details = await screen.findByRole('region', { name: 'Test Program 2' });
+    expect(details).toHaveTextContent('456 Test Ave, Houston, TX');
+    expect(screen.queryByRole('list', { name: 'Search results' })).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Test Program 2' })).toHaveFocus();
+    fireEvent.click(screen.getByRole('button', { name: 'Back to results' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'View Test Program 2' })).toHaveFocus());
+    expect(screen.queryByRole('region', { name: 'Test Program 2' })).not.toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('Test Program');
   });
 
   test('unknown location metadata is explicitly unverified and traceable', async () => {
@@ -173,7 +189,7 @@ describe('TexasMap Component', () => {
     } as any);
     render(<TexasMapWithProvider />);
     fireEvent.click(screen.getByTestId('advanced-marker'));
-    const infoWindow = await screen.findByTestId('info-window');
+    const infoWindow = await screen.findByRole('region', { name: 'Test Program 1' });
     expect(infoWindow).toHaveTextContent('Not verified');
     expect(infoWindow).toHaveTextContent('Legacy location record');
     expect(infoWindow).not.toHaveTextContent('Test Grantee 1');
@@ -194,27 +210,25 @@ describe('TexasMap Component', () => {
     mockUseMapData.mockReturnValue({ ...mockUseMapData(), headStartPrograms: programs } as any);
     render(<TexasMapWithProvider />);
     fireEvent.click(screen.getByTestId('advanced-marker'));
-    const infoWindow = await screen.findByTestId('info-window');
+    const infoWindow = await screen.findByRole('region', { name: 'Test-only cited location' });
     expect(infoWindow).toHaveTextContent(label);
     expect(infoWindow).toHaveTextContent('Independent test recipient');
     expect(infoWindow).toHaveTextContent('Test-only document, row 1');
     expect(infoWindow).toHaveTextContent('2026-01-31');
   });
 
-  test('closes info window when close button is clicked', async () => {
+  test('closes details when close button is clicked', async () => {
     render(<TexasMapWithProvider />);
     
     // Find a marker and click it to open info window
     const markers = screen.getAllByTestId('advanced-marker');
     fireEvent.click(markers[0]);
     
-    // Find the info window and click its close button
-    const infoWindow = await screen.findByTestId('info-window');
-    fireEvent.click(infoWindow);
+    fireEvent.click(await screen.findByRole('button', { name: 'Close details' }));
     
     // Check if info window is closed (removed from the document)
     await waitFor(() => {
-      expect(screen.queryByTestId('info-window')).not.toBeInTheDocument();
+      expect(screen.queryByRole('region', { name: 'Test Program 1' })).not.toBeInTheDocument();
     });
   });
 
@@ -319,6 +333,22 @@ describe('TexasMap Component', () => {
 
     const fourRegions = [region('West'), region('North'), region('East'), region('South')];
 
+    test('region buttons open details without polygon clicks or enabling overlays', async () => {
+      mockUseMapData.mockReturnValue({
+        ...mockUseMapData(), txhsaRegions: fourRegions,
+        regionProgramCounts: { West: 0, North: 2, East: 1, South: 7 },
+      });
+      render(<TexasMapWithProvider />);
+      const button = screen.getByRole('button', { name: 'View South region' });
+      screen.getByRole('textbox').focus();
+      fireEvent.click(button);
+      expect(await screen.findByRole('region', { name: 'South' })).toHaveTextContent('7 listed locations');
+      expect(screen.getByRole('heading', { name: 'South' })).toHaveFocus();
+      expect(mockUseMapData().toggleLayer).not.toHaveBeenCalled();
+      fireEvent.keyDown(screen.getByRole('heading', { name: 'South' }), { key: 'Escape' });
+      await waitFor(() => expect(button).toHaveFocus());
+    });
+
     test('creates one google.maps.Data layer per region when the layer is on', async () => {
       mockUseMapData.mockReturnValue({
         ...mockUseMapData(),
@@ -361,9 +391,9 @@ describe('TexasMap Component', () => {
 
       // Fire a click on the 4th layer (South) via the mock helper.
       const instances = (global as any).__getMapDataInstances();
-      instances[3]._fireClick({ lat: 27.5, lng: -98.0 });
+      act(() => instances[3]._fireClick({ lat: 27.5, lng: -98.0 }));
 
-      const infoWindow = await screen.findByTestId('info-window');
+      const infoWindow = await screen.findByRole('region', { name: 'South' });
       expect(infoWindow).toHaveTextContent('South');
       expect(infoWindow).toHaveTextContent('7 listed locations in this region.');
       expect(infoWindow).toHaveTextContent('Funding not verified');
@@ -396,9 +426,9 @@ describe('TexasMap Component', () => {
       await waitFor(() => {
         expect((global as any).__getMapDataInstances().length).toBeGreaterThanOrEqual(4);
       });
-      (global as any).__getMapDataInstances()[0]._fireClick({ lat: 30.5, lng: -99.5 });
+      act(() => (global as any).__getMapDataInstances()[0]._fireClick({ lat: 30.5, lng: -99.5 }));
 
-      const infoWindow = await screen.findByTestId('info-window');
+      const infoWindow = await screen.findByRole('region', { name: 'West' });
       expect(infoWindow).toHaveTextContent('1 listed location in this region.');
       expect(infoWindow).not.toHaveTextContent('11,857');
     });
@@ -420,9 +450,9 @@ describe('TexasMap Component', () => {
       await waitFor(() => {
         expect((global as any).__getMapDataInstances().length).toBeGreaterThanOrEqual(4);
       });
-      (global as any).__getMapDataInstances()[1]._fireClick({ lat: 30.5, lng: -99.5 });
+      act(() => (global as any).__getMapDataInstances()[1]._fireClick({ lat: 30.5, lng: -99.5 }));
 
-      const infoWindow = await screen.findByTestId('info-window');
+      const infoWindow = await screen.findByRole('region', { name: 'North' });
       expect(infoWindow).toHaveTextContent('North');
       expect(infoWindow).toHaveTextContent('Location count unavailable');
       expect(infoWindow).toHaveTextContent('Funding not verified');

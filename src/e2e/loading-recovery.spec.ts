@@ -21,6 +21,7 @@ for (const failure of ['malformed', 'HTTP failure']) {
     });
     await page.goto('/');
     await expect(page.getByRole('region', { name: 'Map SDK test double' })).toBeVisible();
+    if (await page.locator('details').getAttribute('open') === null) await page.locator('summary').click();
     await expect(page.getByRole('button', { name: 'Recovery Test Austin', exact: true })).toBeVisible();
     await expect(page.getByRole('alert')).toContainText('Failed to load TXHSA regions');
     const toggle = page.getByRole('button', { name: 'Toggle TXHSA Regions layer' });
@@ -28,7 +29,7 @@ for (const failure of ['malformed', 'HTTP failure']) {
     await expect(toggle).toHaveAttribute('aria-pressed', 'false');
     await page.getByRole('textbox', { name: 'Search Head Start programs' }).fill('Houston');
     await page.getByRole('button', { name: 'View Recovery Test Houston' }).click();
-    await expect(page.getByRole('dialog')).toContainText('Recovery Test Houston');
+    await expect(page.getByRole('region', { name: 'Recovery Test Houston' })).toBeVisible();
     fail = false;
     const retry = page.getByRole('button', { name: 'Retry TXHSA regions' });
     await retry.focus();
@@ -53,11 +54,12 @@ test('slow optional data leaves the map, markers and search usable', async ({ pa
   });
   await page.goto('/');
   await expect(page.getByRole('region', { name: 'Map SDK test double' })).toBeVisible();
+  if (await page.locator('details').getAttribute('open') === null) await page.locator('summary').click();
   await expect(page.getByRole('status')).toContainText('Loading TXHSA regions');
   await expect(page.getByRole('button', { name: 'Recovery Test Austin', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Toggle TXHSA Regions layer' })).toBeDisabled();
   await page.getByRole('button', { name: 'Recovery Test Austin', exact: true }).click();
-  await expect(page.getByRole('dialog')).toContainText('Recovery Test Austin');
+  await expect(page.getByRole('region', { name: 'Recovery Test Austin' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Search Head Start programs' }).fill('Austin');
   await expect(page.getByRole('button', { name: 'View Recovery Test Austin' })).toBeVisible();
   release();
@@ -72,7 +74,7 @@ test('transient SDK failure offers reload and recovers on a fresh page', async (
   await expect(page.getByRole('alert')).toContainText('Google Maps could not be loaded');
   fail = false;
   await page.getByRole('button', { name: 'Reload Page' }).focus();
-  await page.keyboard.press('Enter');
+  await Promise.all([page.waitForEvent('load'), page.keyboard.press('Enter')]);
   await expect(page.getByRole('region', { name: 'Map SDK test double' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Recovery Test Austin', exact: true })).toBeVisible();
 });

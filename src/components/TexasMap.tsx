@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Map, InfoWindow, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
-import { MapPin, Users, DollarSign, Building2, MapIcon } from 'lucide-react';
+import { Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
+import { MapPin, Users, DollarSign, Building2, MapIcon, X } from 'lucide-react';
 import { useMapData } from '../hooks/useMapData';
 import { useSearch } from '../hooks/useSearch';
 import type { HeadStartProgram, TxhsaRegion, TxhsaRegionName } from '../types/maps';
@@ -20,15 +20,9 @@ interface TexasMapProps {
   mapId?: string;
 }
 
-/**
- * Interface for marker click event data
- */
-interface MarkerClickData {
-  program?: HeadStartProgram;
-  region?: TxhsaRegion;
-  position: google.maps.LatLngLiteral;
-  type: 'program' | 'region';
-}
+type Selection =
+  | { program: HeadStartProgram; region?: never }
+  | { region: TxhsaRegion; program?: never };
 
 /**
  * Resolved hex colors for region fill / stroke. Mirrors the CSS variables in
@@ -82,9 +76,13 @@ const TexasMap: React.FC<TexasMapProps> = ({
   // Get map instance using the useMap hook
   const map = useMap();
 
-  // State for selected marker and info window
-  const [selectedMarker, setSelectedMarker] = useState<MarkerClickData | null>(null);
-  const [infoWindowOpen, setInfoWindowOpen] = useState(false);
+  // Details live outside the map so they never cover map controls or overlays.
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const detailsRef = useRef<HTMLElement>(null);
+  const detailsHeadingRef = useRef<HTMLHeadingElement>(null);
+  const directoryRef = useRef<HTMLDivElement>(null);
+  const selectionTriggerRef = useRef<HTMLElement | null>(null);
+  const restoreFocusRef = useRef(false);
 
   // TXHSA region polygon overlays. Held in a ref because they are imperative
   // Google Maps resources (Data layers) -- not render state. Storing them in
@@ -94,9 +92,6 @@ const TexasMap: React.FC<TexasMapProps> = ({
 
   // State for map loading
   const [mapLoaded, setMapLoaded] = useState(false);
-
-  // Reference to the map container for drag boundary calculations
-  const mapContainerRef = useRef<HTMLDivElement>(null);
 
   /**
    * Default map center coordinates (Texas geographic center)
@@ -115,34 +110,57 @@ const TexasMap: React.FC<TexasMapProps> = ({
    */
   // Remove the handleMapLoad function since we're using useMap hook
 
-  /**
-   * Handle marker click events
-   * Opens info window with program or region details
-   */
-  const handleMarkerClick = useCallback((data: MarkerClickData) => {
-    setSelectedMarker(data);
-    setInfoWindowOpen(true);
+  const handleSelectDetails = useCallback((data: Selection, trigger?: HTMLElement) => {
+    const active = trigger ?? document.activeElement;
+    selectionTriggerRef.current = active instanceof HTMLElement && !detailsRef.current?.contains(active) ? active : null;
+    setSelection(data);
   }, []);
 
-  /**
-   * Handle info window close
-   */
-  const handleInfoWindowClose = useCallback(() => {
-    setInfoWindowOpen(false);
-    setSelectedMarker(null);
+  const handleCloseDetails = useCallback(() => {
+    restoreFocusRef.current = true;
+    setSelection(null);
   }, []);
 
-  const handleSelectSearchResult = useCallback((program: HeadStartProgram) => {
-    handleMarkerClick({
-      program,
-      position: { lat: program.lat, lng: program.lng },
-      type: 'program',
-    });
+  useEffect(() => {
+    if (selection) {
+      const focusDetails = () => {
+        detailsHeadingRef.current?.focus({ preventScroll: true });
+        detailsRef.current?.scrollIntoView({ block: 'start' });
+      };
+      // Google's fullscreen control encloses only the map, not the directory.
+      if (document.fullscreenElement) {
+        void document.exitFullscreen().then(focusDetails, focusDetails);
+      } else {
+        focusDetails();
+      }
+    } else if (restoreFocusRef.current) {
+      restoreFocusRef.current = false;
+      const trigger = selectionTriggerRef.current;
+      if (trigger?.isConnected && trigger !== document.body) {
+        trigger.focus();
+      } else {
+        directoryRef.current?.querySelector<HTMLInputElement>('input')?.focus();
+      }
+    }
+  }, [selection]);
+
+  const handleDirectorySearch = useCallback((value: string) => {
+    setSelection(null);
+    handleSearchChange(value);
+  }, [handleSearchChange]);
+
+  const handleDirectoryClear = useCallback(() => {
+    setSelection(null);
+    clearSearch();
+  }, [clearSearch]);
+
+  const handleSelectSearchResult = useCallback((program: HeadStartProgram, trigger: HTMLButtonElement) => {
+    handleSelectDetails({ program }, trigger);
     if (map) {
       map.panTo({ lat: program.lat, lng: program.lng });
       map.setZoom(12);
     }
-  }, [handleMarkerClick, map]);
+  }, [handleSelectDetails, map]);
 
 
 
@@ -186,20 +204,12 @@ const TexasMap: React.FC<TexasMapProps> = ({
         strokeWeight: 2,
         strokeOpacity: 0.9,
       });
-      dataLayer.addListener('click', (event: google.maps.Data.MouseEvent) => {
-        if (event.latLng) {
-          handleMarkerClick({
-            region,
-            position: { lat: event.latLng.lat(), lng: event.latLng.lng() },
-            type: 'region',
-          });
-        }
-      });
+      dataLayer.addListener('click', () => handleSelectDetails({ region }));
       newOverlays.push(dataLayer);
     }
 
     regionOverlaysRef.current = newOverlays;
-  }, [map, layerVisibility.txhsaRegions, txhsaRegions, handleMarkerClick, teardownRegionOverlays]);
+  }, [map, layerVisibility.txhsaRegions, txhsaRegions, handleSelectDetails, teardownRegionOverlays]);
 
   /**
    * Mark the map as ready once the map instance and either programs or
@@ -222,10 +232,10 @@ const TexasMap: React.FC<TexasMapProps> = ({
   }, [mapLoaded, layerVisibility.txhsaRegions, txhsaRegions, renderRegionOverlays]);
 
   useEffect(() => {
-    if (selectedMarker?.region && (!layerVisibility.txhsaRegions || !txhsaRegions.includes(selectedMarker.region))) {
-      handleInfoWindowClose();
+    if (selection?.region && !txhsaRegions.includes(selection.region)) {
+      handleCloseDetails();
     }
-  }, [selectedMarker, layerVisibility.txhsaRegions, txhsaRegions, handleInfoWindowClose]);
+  }, [selection, txhsaRegions, handleCloseDetails]);
 
   /**
    * Cleanup effect to remove overlays when component unmounts
@@ -255,29 +265,23 @@ const TexasMap: React.FC<TexasMapProps> = ({
   }, [toggleLayer]);
 
   /**
-   * Render program info window content
+   * Render selected location details.
    */
-  const renderProgramInfoWindow = (program: HeadStartProgram) => (
-    <div className="max-w-sm p-4 bg-white rounded-lg shadow-lg">
+  const renderProgramDetails = (program: HeadStartProgram) => (
+    <div className="p-4 bg-white rounded-lg break-words">
       {/* Program Header */}
       <div className="border-b border-gray-200 pb-3 mb-3">
         <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h3 className="font-semibold text-gray-900 text-sm leading-tight mb-1">
+          <div className="flex-1 min-w-0">
+            <h3 ref={detailsHeadingRef} id="selected-details-title" tabIndex={-1} className="font-semibold text-gray-900 text-base leading-snug mb-2 scroll-mt-40 focus:outline focus:outline-2 focus:outline-tx-blue-600">
               {program.name}
             </h3>
-            <div className="flex items-center text-xs text-gray-600 mb-2">
+            <div className="flex items-start text-sm text-gray-600 mb-2">
               <MapPin className="w-3 h-3 mr-1 flex-shrink-0" aria-hidden="true" />
-              <span className="truncate">
+              <span>
                 {program.address}
               </span>
             </div>
-          </div>
-          <div className="ml-2 flex-shrink-0">
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-              <Building2 className="w-3 h-3 mr-1" aria-hidden="true" />
-              Program
-            </span>
           </div>
         </div>
       </div>
@@ -286,7 +290,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
       <div className="space-y-3">
         {/* Program Type */}
         <div className="bg-blue-50 rounded-lg p-3">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
             <span className="text-xs font-medium text-blue-800 flex items-center">
               <Users className="w-3 h-3 mr-1" aria-hidden="true" />
               Program Type
@@ -345,10 +349,10 @@ const TexasMap: React.FC<TexasMapProps> = ({
   );
 
   /**
-   * Render TXHSA region info window content (region name + program count only).
+   * Render selected region details and data limitations.
    * Per R11, no representative / party / contact / committee fields appear here.
    */
-  const renderRegionInfoWindow = (region: TxhsaRegion) => {
+  const renderRegionDetails = (region: TxhsaRegion) => {
     const count = regionProgramCounts?.[region.name];
     const countCopy = count == null
       ? 'Location count unavailable until data integrity checks pass.'
@@ -357,9 +361,9 @@ const TexasMap: React.FC<TexasMapProps> = ({
         : `${count} listed locations in this region.`;
 
     return (
-      <div className="max-w-sm p-4 bg-white rounded-lg shadow-lg">
+      <div className="p-4 bg-white rounded-lg break-words">
         <div className="border-b border-gray-200 pb-3 mb-3 flex items-start justify-between">
-          <h3 className="font-semibold text-gray-900 text-sm leading-tight">
+          <h3 ref={detailsHeadingRef} id="selected-details-title" tabIndex={-1} className="font-semibold text-gray-900 text-base leading-snug scroll-mt-40 focus:outline focus:outline-2 focus:outline-tx-blue-600">
             {region.name}
           </h3>
           <span className="ml-2 flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
@@ -407,44 +411,85 @@ const TexasMap: React.FC<TexasMapProps> = ({
 
 
   return (
-    <div ref={mapContainerRef} className={`relative ${className}`} style={{ height }}>
-      {programsError && (
-        <div role="alert" className="absolute bottom-4 right-4 z-map-controls card-elevated p-4 max-w-sm">
-          <p>{programsError} Showing previously loaded locations.</p>
-          <button type="button" className="btn-primary mt-2" onClick={retryLoading}>Retry program locations</button>
-        </div>
-      )}
-      {/* Search */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1100] w-[90%] max-w-md">
+    <div className={`grid lg:grid-cols-[20rem_minmax(0,1fr)] ${className}`}>
+      <div ref={directoryRef} className="min-w-0 p-4 space-y-3 bg-tx-gray-50 border-b lg:border-b-0 lg:border-r border-tx-gray-200">
+        {programsError && (
+          <div role="alert" className="card-elevated p-4">
+            <p>{programsError} Showing previously loaded locations.</p>
+            <button type="button" className="btn-primary mt-2" onClick={retryLoading}>Retry program locations</button>
+          </div>
+        )}
         <SearchBar
           searchTerm={searchTerm}
-          onSearchChange={handleSearchChange}
-          onClear={clearSearch}
+          onSearchChange={handleDirectorySearch}
+          onClear={handleDirectoryClear}
           resultCount={searchResults.totalResults}
           isSearchActive={searchResults.isSearchActive}
         />
-        <div className="mt-2">
+        <MapControls
+          layerVisibility={mapControlsLayerVisibility}
+          onToggleLayer={handleMapControlsToggle}
+          programCount={headStartPrograms.length}
+          regionsLoading={isLoadingRegions}
+          regionsError={regionsError}
+          regionsAvailable={txhsaRegions.length > 0}
+          onRetryRegions={loadTxhsaRegions}
+        />
+        {!isLoadingRegions && !regionsError && txhsaRegions.length > 0 && (
+          <div role="group" aria-label="Region information">
+            <p className="text-xs font-medium text-tx-gray-600 mb-1">View region details (boundaries optional)</p>
+            <div className="grid grid-cols-4 gap-1">
+              {txhsaRegions.map(region => (
+                <button
+                  key={region.name}
+                  type="button"
+                  aria-label={`View ${region.name} region`}
+                  aria-current={selection?.region === region ? true : undefined}
+                  onClick={event => handleSelectDetails({ region }, event.currentTarget)}
+                  className="min-h-[44px] rounded-lg border border-tx-gray-200 bg-white text-sm font-medium text-tx-gray-800 hover:bg-tx-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-tx-blue-600"
+                  style={{ borderBottomColor: `var(--txhsa-${region.name.toLowerCase()})`, borderBottomWidth: 3 }}
+                >
+                  {region.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <div hidden={!!selection}>
           <SearchResults
             programs={searchResults.programs}
             isSearchActive={searchResults.isSearchActive}
             onSelectProgram={handleSelectSearchResult}
           />
         </div>
+        {selection && (
+          <section
+            ref={detailsRef}
+            role="region"
+            aria-labelledby="selected-details-title"
+            className="border border-tx-gray-200 bg-white rounded-lg scroll-mt-4 lg:scroll-mt-32"
+            onKeyDown={event => {
+              if (event.key === 'Escape') {
+                event.stopPropagation();
+                handleCloseDetails();
+              }
+            }}
+          >
+            <div className="flex items-center justify-between border-b border-tx-gray-200 px-2">
+              {searchResults.isSearchActive ? (
+                <button type="button" onClick={handleCloseDetails} className="min-h-[44px] px-2 text-sm font-medium text-tx-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-tx-blue-600">Back to results</button>
+              ) : <span className="px-2 text-sm font-medium text-tx-gray-600">Selected details</span>}
+              <button type="button" onClick={handleCloseDetails} aria-label="Close details" className="w-11 h-11 shrink-0 flex items-center justify-center rounded-lg text-tx-gray-700 hover:bg-tx-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-tx-blue-600">
+                <X className="w-5 h-5" aria-hidden="true" />
+              </button>
+            </div>
+            {selection.program ? renderProgramDetails(selection.program) : renderRegionDetails(selection.region)}
+          </section>
+        )}
       </div>
 
-      {/* Map Controls */}
-      <MapControls
-        layerVisibility={mapControlsLayerVisibility}
-        onToggleLayer={handleMapControlsToggle}
-        programCount={headStartPrograms?.length || 0}
-        mapContainerRef={mapContainerRef}
-        regionsLoading={isLoadingRegions}
-        regionsError={regionsError}
-        regionsAvailable={txhsaRegions.length > 0}
-        onRetryRegions={loadTxhsaRegions}
-      />
-
       {/* Google Map */}
+      <div className="relative min-w-0 self-start" style={{ height }}>
       <Map
         mapId={mapId}
         defaultCenter={defaultCenter}
@@ -462,11 +507,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
           <AdvancedMarker
             key={`program-${program.id}`}
             position={{ lat: program.lat, lng: program.lng }}
-            onClick={() => handleMarkerClick({
-              program,
-              position: { lat: program.lat, lng: program.lng },
-              type: 'program'
-            })}
+            onClick={() => handleSelectDetails({ program })}
             title={program.name}
           >
             <div 
@@ -496,24 +537,8 @@ const TexasMap: React.FC<TexasMapProps> = ({
           </AdvancedMarker>
         ))}
 
-        {/* Info Window */}
-        {infoWindowOpen && selectedMarker && (
-          <InfoWindow
-            position={selectedMarker.position}
-            onCloseClick={handleInfoWindowClose}
-            pixelOffset={[0, -10]}
-            disableAutoPan={false}
-            maxWidth={400}
-          >
-            {selectedMarker.type === 'program' && selectedMarker.program
-              ? renderProgramInfoWindow(selectedMarker.program)
-              : selectedMarker.type === 'region' && selectedMarker.region
-              ? renderRegionInfoWindow(selectedMarker.region)
-              : <div className="p-2">No data available</div>
-            }
-          </InfoWindow>
-        )}
       </Map>
+      </div>
     </div>
   );
 };

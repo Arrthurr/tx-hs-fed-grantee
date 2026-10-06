@@ -5,7 +5,7 @@ import type { HeadStartProgram } from '../types/maps';
 interface SearchResultsProps {
   programs: HeadStartProgram[];
   isSearchActive: boolean;
-  onSelectProgram: (program: HeadStartProgram) => void;
+  onSelectProgram: (program: HeadStartProgram, trigger: HTMLButtonElement) => void;
   className?: string;
 }
 
@@ -16,8 +16,8 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   className = '',
 }) => {
   const handleClick = useCallback(
-    (program: HeadStartProgram) => {
-      onSelectProgram(program);
+    (program: HeadStartProgram, trigger: HTMLButtonElement) => {
+      onSelectProgram(program, trigger);
     },
     [onSelectProgram]
   );
@@ -43,21 +43,19 @@ const SearchResults: React.FC<SearchResultsProps> = ({
   return (
     <div
       className={`bg-white border border-tx-gray-200 rounded-lg shadow-sm overflow-hidden ${className}`}
-      role="listbox"
-      aria-label="Search results"
     >
-      <ul className="max-h-64 overflow-y-auto divide-y divide-tx-gray-100" role="list">
+      <ul className="max-h-64 overflow-y-auto divide-y divide-tx-gray-100" aria-label="Search results">
         {programs.map((program) => (
-          <li key={program.id} role="option" aria-selected={false}>
+          <li key={program.id}>
             <button
               type="button"
-              onClick={() => handleClick(program)}
-              className="w-full px-4 py-3 text-left hover:bg-tx-blue-50 transition-colors group"
+              onClick={event => handleClick(program, event.currentTarget)}
+              className="w-full min-h-[44px] px-4 py-3 text-left hover:bg-tx-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-tx-blue-600 transition-colors group"
               aria-label={`View ${program.name}`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-tx-gray-900 truncate group-hover:text-tx-blue-700">
+                  <p className="text-sm font-medium text-tx-gray-900 break-words group-hover:text-tx-blue-700">
                     {program.name}
                   </p>
                   <div className="flex items-center gap-1 mt-1 text-xs text-tx-gray-500">

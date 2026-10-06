@@ -72,4 +72,18 @@ describe('MapControls Component', () => {
     render(<MapControls {...mockProps} />);
     expect(screen.getByLabelText('Toggle TXHSA Regions layer')).toBeInTheDocument();
   });
+
+  test('layers live in a native disclosure with no draggable container', () => {
+    render(<MapControls {...mockProps} />);
+    const summary = screen.getByText('Data Layers').closest('summary');
+    expect(summary).not.toBeNull();
+    expect(summary?.closest('details')).toBeInTheDocument();
+    expect(screen.queryByText('Drag to Move')).not.toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Head Start programs layer');
+    fireEvent.pointerDown(toggle);
+    fireEvent.pointerMove(toggle);
+    fireEvent.pointerCancel(toggle);
+    fireEvent.click(toggle);
+    expect(mockProps.onToggleLayer).toHaveBeenCalledTimes(1);
+  });
 });

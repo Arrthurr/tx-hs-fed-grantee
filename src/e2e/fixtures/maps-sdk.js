@@ -22,7 +22,7 @@
       this.options = options;
       div.setAttribute('role', 'region');
       div.setAttribute('aria-label', 'Map SDK test double');
-      div.style.cssText = 'height:100%;background:#e9eef1;padding:260px 24px 24px;display:flex;gap:20px;align-items:flex-start;justify-content:center';
+      div.style.cssText = 'height:100%;background:#e9eef1;padding:100px 24px 24px;display:flex;flex-wrap:wrap;gap:20px;align-content:flex-start;align-items:flex-start;justify-content:center';
     }
     getDiv() { return this.div; }
     setOptions(options) { Object.assign(this.options, options); }

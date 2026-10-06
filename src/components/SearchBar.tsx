@@ -45,7 +45,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           value={searchTerm}
           onChange={handleChange}
           placeholder="Search listed locations by name or address..."
-          className="w-full pl-10 pr-10 py-2.5 text-sm border border-tx-gray-200 rounded-lg bg-white text-tx-gray-900 placeholder:text-tx-gray-400 focus:outline-none focus:ring-2 focus:ring-tx-blue-500 focus:border-tx-blue-500 transition-colors"
+          className="w-full min-h-[44px] pl-10 pr-12 py-2.5 text-base border border-tx-gray-200 rounded-lg bg-white text-tx-gray-900 placeholder:text-tx-gray-400 focus:outline-none focus:ring-2 focus:ring-tx-blue-500 focus:border-tx-blue-500 transition-colors"
           aria-label="Search Head Start programs"
           aria-describedby={isSearchActive ? 'search-result-count' : undefined}
         />
@@ -53,7 +53,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-tx-gray-400 hover:text-tx-gray-600 hover:bg-tx-gray-100 transition-colors"
+            className="absolute right-0 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-lg text-tx-gray-600 hover:bg-tx-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-tx-blue-600 transition-colors"
             aria-label="Clear search"
           >
             <X className="w-4 h-4" aria-hidden="true" />

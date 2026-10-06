@@ -16,10 +16,10 @@ boundaries.
 ## Features
 
 - Texas-centered Google Map with distinct listed location markers, not a statewide census
-- Location info windows with name, address, coordinates, and explicit unverified fields
+- Separate location details with name, address, coordinates, and explicit unverified fields
 - Search by location name, address, or a sourced grantee when available
 - Toggleable TXHSA Regions overlay for West, North, East, and South
-- Region info windows with distinct listed location counts; unsourced funding withheld
+- Keyboard-accessible region details with distinct listed location counts; unsourced funding withheld
 - Responsive React/Tailwind interface with accessible controls
 
 ## Stack
@@ -30,7 +30,7 @@ boundaries.
 - `@vis.gl/react-google-maps`
 - Google Maps JavaScript API
 - Jest + React Testing Library
-- Playwright infrastructure, with no checked-in E2E tests currently
+- Playwright loading-recovery and responsive accessibility tests using a Google SDK test double
 - `@turf/union` + `tsx` for build-time region dissolves
 
 ## Setup

@@ -135,7 +135,7 @@ const AppContent: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-tx-blue-50 via-white to-tx-orange-50">
         {/* Header Section */}
-        <header className="bg-white shadow-sm border-b border-tx-gray-200 sticky top-0 z-50" role="banner">
+        <header className="bg-white shadow-sm border-b border-tx-gray-200 lg:sticky top-0 z-50" role="banner">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             {/* Title and Logo */}
             <div className="flex items-center justify-between">
@@ -194,7 +194,7 @@ const AppContent: React.FC = () => {
                   Listed Head Start Locations
                 </h2>
                 <p className="text-tx-blue-100 text-sm leading-relaxed">
-                  Click on program markers to view details. Toggle layers to explore Head Start programs and TXHSA regions.
+                  Select a marker or search result to view location details. Use the region buttons for regional information, and Data Layers to show or hide boundaries.
                 </p>
                 <p className="text-tx-blue-100 text-sm mt-2">
                   Unverified legacy directory: reporting date, program types, grantees and funding are unknown. Counts are listed locations, not statewide program totals.{' '}

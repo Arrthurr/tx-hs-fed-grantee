@@ -131,7 +131,7 @@ describe('SearchResults Component', () => {
       <SearchResults programs={mockPrograms} isSearchActive onSelectProgram={onSelectProgram} />
     );
     fireEvent.click(screen.getByLabelText('View Houston Early Head Start'));
-    expect(onSelectProgram).toHaveBeenCalledWith(mockPrograms[1]);
+    expect(onSelectProgram).toHaveBeenCalledWith(mockPrograms[1], screen.getByLabelText('View Houston Early Head Start'));
     expect(onSelectProgram).toHaveBeenCalledTimes(1);
   });
 
@@ -144,11 +144,13 @@ describe('SearchResults Component', () => {
     expect(screen.getByLabelText('View Dallas Head Start Center')).toBeInTheDocument();
   });
 
-  test('results container has role="listbox"', () => {
+  test('results use a named list with native buttons, not an incomplete listbox', () => {
     render(
       <SearchResults programs={mockPrograms} isSearchActive onSelectProgram={onSelectProgram} />
     );
-    expect(screen.getByRole('listbox')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Search results' })).toBeInTheDocument();
+    expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
+    expect(screen.queryByRole('option')).not.toBeInTheDocument();
   });
 
   test('results list has role="list"', () => {
@@ -167,7 +169,7 @@ describe('SearchResults Component', () => {
         className="custom-class"
       />
     );
-    expect(screen.getByRole('listbox')).toHaveClass('custom-class');
+    expect(screen.getByRole('list').parentElement).toHaveClass('custom-class');
   });
 
   test('"no results" message has aria-live="polite"', () => {
