@@ -9,11 +9,17 @@ test.beforeEach(async ({ page }) => {
   ] }));
 });
 
-for (const failure of ['malformed', 'HTTP failure']) {
+for (const failure of ['malformed', 'HTTP failure', 'wrong region name']) {
   test(`region ${failure} keeps programs usable and keyboard retry recovers`, async ({ page }) => {
     let fail = true;
     await page.route('**/assets/txhsa-geojson/east.geojson', async route => {
       if (!fail) return route.continue();
+      if (failure === 'wrong region name') {
+        const response = await route.fetch();
+        const collection = await response.json();
+        collection.features[0].properties.name = 'North';
+        return route.fulfill({ json: collection });
+      }
       await route.fulfill(failure === 'malformed' ? { json: { features: [] } } : { status: 503, body: 'Unavailable' });
     });
     await page.goto('/');

@@ -13,7 +13,7 @@ not a credential and is never sent to Google.
 | Spec | What it proves | What it does not prove |
 | --- | --- | --- |
 | `app-shell.spec.ts` | Directory chrome, "Show all Texas", committed data clustering without blocking search/details, default layer states, region buttons | Live tiles, geocoding, API-key validity |
-| `loading-recovery.spec.ts` | Optional-region malformed/HTTP failure, keyboard retry, overlay removal, SDK abort/reload, authorization errors | Geographic rendering |
+| `loading-recovery.spec.ts` | Optional-region malformed/HTTP/wrong-name failure, keyboard retry, overlay removal, SDK abort/reload, authorization errors | Geographic rendering |
 | `map-accessibility.spec.ts` | 320px/390px/tablet/desktop details unobscured after selection, empty results, touch/mouse/keyboard toggles, region information without polygon clicks, fullscreen selection, resize, one initial statewide fit plus "Show all Texas" refit, coincident locations clustered yet reachable via search, layer off clearing pins and clusters | WCAG audit, live Maps controls, real cluster geometry or click-to-zoom |
 
 Run from the repo root with no existing Vite server (or restart that server

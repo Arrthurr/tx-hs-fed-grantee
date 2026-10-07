@@ -7,7 +7,7 @@ import {
 } from './txhsaRegions';
 import type { HeadStartProgram, TxhsaRegionFeature } from '../types/maps';
 
-const validWestFeature: TxhsaRegionFeature = {
+const validWestFeature = {
   type: 'Feature',
   properties: { name: 'West' },
   geometry: {
@@ -16,7 +16,7 @@ const validWestFeature: TxhsaRegionFeature = {
       [-104, 30], [-100, 30], [-100, 34], [-104, 34], [-104, 30],
     ]],
   },
-};
+} satisfies TxhsaRegionFeature;
 
 const location = (id: string, lat: number, lng: number): HeadStartProgram => ({
   id, name: `Location ${id}`, address: 'Texas', lat, lng, type: 'unknown',
@@ -98,6 +98,20 @@ describe('parseTxhsaRegionCollection', () => {
     const collection = { type: 'FeatureCollection', features: [validWestFeature] };
     expect(parseTxhsaRegionCollection(collection, 'West')).toBe(validWestFeature);
     expect(() => parseTxhsaRegionCollection(collection, 'North')).toThrow('Region name mismatch: North');
+  });
+
+  it('rejects array-shaped objects instead of accepting them as a feature array', () => {
+    expect(() => parseTxhsaRegionCollection({
+      type: 'FeatureCollection', features: { 0: validWestFeature, length: 1 },
+    }, 'West')).toThrow('Invalid region collection: West');
+  });
+
+  it('accepts a valid MultiPolygon collection', () => {
+    const feature: TxhsaRegionFeature = {
+      ...validWestFeature,
+      geometry: { type: 'MultiPolygon', coordinates: [validWestFeature.geometry.coordinates] },
+    };
+    expect(parseTxhsaRegionCollection({ type: 'FeatureCollection', features: [feature] }, 'West')).toBe(feature);
   });
 
   it.each([

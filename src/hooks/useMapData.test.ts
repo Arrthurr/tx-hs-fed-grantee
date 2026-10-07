@@ -237,6 +237,33 @@ describe('useMapData Hook', () => {
       warn.mockRestore();
     });
 
+    test('rejects a wrong-name region file without losing programs and recovers on retry', async () => {
+      const originalFetch = (global.fetch as jest.Mock).getMockImplementation()!;
+      const { result } = renderHook(() => useMapData());
+      await waitFor(() => expect(result.current.regionProgramCounts).toEqual({ West: 0, North: 1, East: 0, South: 1 }));
+      act(() => { result.current.toggleLayer('txhsaRegions'); });
+      expect(result.current.layerVisibility.txhsaRegions).toBe(true);
+
+      (global.fetch as jest.Mock).mockImplementation((url: string) => url.includes('txhsa-geojson/west.geojson')
+        ? Promise.resolve({ ok: true, json: async () => regionFixtures.north })
+        : originalFetch(url));
+      await act(async () => { await result.current.loadTxhsaRegions(); });
+      expect(result.current.regionsError).toContain('Invalid TXHSA region payload at /assets/txhsa-geojson/west.geojson');
+      expect(result.current.txhsaRegions).toEqual([]);
+      expect(result.current.regionProgramCounts).toBeNull();
+      expect(result.current.layerVisibility.txhsaRegions).toBe(false);
+      expect(result.current.headStartPrograms).toHaveLength(2);
+      expect(result.current.programsError).toBeNull();
+      expect(result.current.isLoadingRegions).toBe(false);
+
+      (global.fetch as jest.Mock).mockImplementation(originalFetch);
+      await act(async () => { result.current.retryLoading(); });
+      expect(result.current.regionsError).toBeNull();
+      expect(result.current.txhsaRegions.map(region => region.name)).toEqual(['West', 'North', 'East', 'South']);
+      expect(result.current.regionProgramCounts).toEqual({ West: 0, North: 1, East: 0, South: 1 });
+      expect(result.current.layerVisibility.txhsaRegions).toBe(false);
+    });
+
     test('reports regionsError when a region payload is malformed (HTTP 200, bad shape)', async () => {
       (global.fetch as jest.Mock).mockImplementation((url: string) => {
         if (url.includes('headStartPrograms.json')) {

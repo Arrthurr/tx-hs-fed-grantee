@@ -45,8 +45,8 @@ export const parseTxhsaRegionCollection = (
   data: unknown,
   expectedName: TxhsaRegionName,
 ): TxhsaRegionFeature => {
-  const collection = data as { type?: unknown; features?: unknown[] } | null;
-  if (collection?.type !== 'FeatureCollection' || collection.features?.length !== 1) {
+  const collection = data as { type?: unknown; features?: unknown } | null;
+  if (collection?.type !== 'FeatureCollection' || !Array.isArray(collection.features) || collection.features.length !== 1) {
     throw new Error(`Invalid region collection: ${expectedName}`);
   }
   const feature = collection.features[0];

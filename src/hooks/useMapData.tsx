@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { HeadStartProgram, LayerVisibility, TxhsaRegion, TxhsaRegionName } from '../types/maps';
 import { processHeadStartPrograms } from '../data/headStartPrograms';
-import { countLocationsByRegion, processTxhsaRegion, validateTxhsaRegion, TXHSA_REGION_NAMES } from '../data/txhsaRegions';
+import { countLocationsByRegion, parseTxhsaRegionCollection, processTxhsaRegion, TXHSA_REGION_NAMES } from '../data/txhsaRegions';
 
 /**
  * Internal hook that owns the actual state, fetches, and derived values.
@@ -138,19 +138,19 @@ const useMapDataInternal = () => {
     controller.signal.addEventListener('abort', () => clearTimeout(timeoutId), { once: true });
 
     try {
-      const slugs = TXHSA_REGION_NAMES.map(n => n.toLowerCase());
-      const results = await Promise.all(slugs.map(async slug => {
+      const results = await Promise.all(TXHSA_REGION_NAMES.map(async name => {
+        const slug = name.toLowerCase();
         const url = `/assets/txhsa-geojson/${slug}.geojson`;
         const response = await fetch(url, { signal: controller.signal });
         if (!response.ok) {
           throw new Error(`Failed to load region ${slug}: HTTP ${response.status} ${response.statusText}`);
         }
         const data = await response.json();
-        const feature = data?.features?.[0];
-        if (!validateTxhsaRegion(feature)) {
+        try {
+          return processTxhsaRegion(parseTxhsaRegionCollection(data, name));
+        } catch {
           throw new Error(`Invalid TXHSA region payload at ${url}`);
         }
-        return processTxhsaRegion(feature);
       }));
       if (!controller.signal.aborted) setTxhsaRegions(results);
     } catch (error) {
