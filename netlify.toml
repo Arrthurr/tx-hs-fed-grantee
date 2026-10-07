@@ -1,0 +1,48 @@
+# Production: https://texasheadstartgrantees.online/
+# See docs/operations/release-runbook.md for the release and rollback procedure.
+
+[build]
+command = "npm run build"
+publish = "dist"
+
+[build.environment]
+NODE_VERSION = "22.22.0"
+
+# Cache policy. Patterns do not overlap: only content-hashed Vite JS/CSS
+# bundles are immutable. HTML, provenance notes and data files revalidate so
+# a republish or rollback takes effect immediately.
+
+[[headers]]
+for = "/"
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+for = "/index.html"
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+for = "/data-provenance.md"
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+for = "/assets/geojson/*"
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+for = "/assets/txhsa-geojson/*"
+[headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+for = "/assets/*.js"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+for = "/assets/*.css"
+[headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
