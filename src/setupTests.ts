@@ -105,9 +105,12 @@ jest.mock('@vis.gl/react-google-maps', () => ({
   Map: jest.fn(({ children }: any) => 
     React.createElement('div', { 'data-testid': 'google-map' }, children)
   ),
-  AdvancedMarker: jest.fn(({ children }: any) => 
-    React.createElement('div', { 'data-testid': 'advanced-marker' }, children)
-  ),
+  // forwardRef so ProgramMarkers can hand marker instances to the clusterer.
+  AdvancedMarker: React.forwardRef(({ children, onClick, title, position }: any, ref: any) => {
+    const marker = React.useRef({ title, position });
+    React.useImperativeHandle(ref, () => marker.current, []);
+    return React.createElement('div', { 'data-testid': 'advanced-marker', title, onClick }, children);
+  }),
   Pin: jest.fn(() => 
     React.createElement('div', { 'data-testid': 'map-pin' })
   ),
@@ -119,6 +122,29 @@ jest.mock('@vis.gl/react-google-maps', () => ({
   ),
   useMap: jest.fn().mockReturnValue(mockMap),
 }));
+
+// MarkerClusterer extends google.maps.OverlayView at construction, which the
+// jsdom google mock does not provide. Record instances so tests can assert
+// cluster membership and cleanup without a real Maps projection.
+const mockClustererInstances: any[] = [];
+jest.mock('@googlemaps/markerclusterer', () => ({
+  MarkerClusterer: jest.fn().mockImplementation((options: any) => {
+    const instance = {
+      options,
+      markers: [] as any[],
+      map: options?.map ?? null,
+      addMarkers: jest.fn((markers: any[]) => {
+        markers.forEach(marker => { if (!instance.markers.includes(marker)) instance.markers.push(marker); });
+      }),
+      clearMarkers: jest.fn(() => { instance.markers.length = 0; }),
+      setMap: jest.fn((map: any) => { instance.map = map; }),
+    };
+    mockClustererInstances.push(instance);
+    return instance;
+  }),
+}));
+(global as any).__getClustererInstances = () => mockClustererInstances;
+(global as any).__resetClustererInstances = () => { mockClustererInstances.length = 0; };
 
 // React is already imported at the top of this file
 

@@ -27,13 +27,13 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom'],
-          'maps-vendor': ['@vis.gl/react-google-maps'],
+          'maps-vendor': ['@vis.gl/react-google-maps', '@googlemaps/markerclusterer'],
           'ui-vendor': ['lucide-react'],
         },
       },
     },
-    // Generate source maps for production
-    sourcemap: true,
+    // Do not publish source maps with the production bundle.
+    sourcemap: false,
   },
   // Enable asset optimization
   assetsInclude: ['**/*.geojson'],
@@ -43,8 +43,10 @@ export default defineConfig({
   server: {
     host: '127.0.0.1',
     cors: true,
+    // Dev responses must never be cached: a long max-age pins stale modules
+    // and GeoJSON in the browser across restarts.
     headers: {
-      'Cache-Control': 'public, max-age=31536000',
+      'Cache-Control': 'no-store',
     },
   },
 });

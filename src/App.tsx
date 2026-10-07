@@ -6,8 +6,10 @@ import LoadingSpinner from './components/LoadingSpinner';
 import ErrorDisplay from './components/ErrorDisplay';
 import { MapDataProvider, useMapData } from './hooks/useMapData';
 
-// Keep the loader inputs stable across data/error state changes.
-const MAPS_LIBRARIES = ['places', 'geometry'];
+// No optional Maps libraries are requested: search and point-in-polygon run
+// locally. AdvancedMarker loads `marker` on demand. Keep a stable reference
+// because APIProvider re-runs its loader effect when `libraries` changes.
+const MAPS_LIBRARIES: string[] = [];
 
 /**
  * Inner application body. Must be rendered inside <MapDataProvider> so

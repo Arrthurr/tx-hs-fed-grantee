@@ -5,15 +5,29 @@
     listeners = {};
     addListener(name, callback) {
       (this.listeners[name] ||= new Set()).add(callback);
-      return { remove: () => this.listeners[name].delete(callback) };
+      return { remove: () => this.listeners[name]?.delete(callback) };
     }
     emit(name, event) { this.listeners[name]?.forEach(callback => callback(event)); }
   }
   class LatLng {
-    constructor(value) { this.value = value; }
+    // Accepts (literal) or (lat, lng), like the real SDK.
+    constructor(value, lng) { this.value = typeof value === 'number' ? { lat: value, lng } : value; }
     lat() { return this.value.lat; }
     lng() { return this.value.lng; }
     toJSON() { return this.value; }
+  }
+  // Minimal bounds for MarkerClusterer cluster positions and fit-to-members.
+  class LatLngBounds {
+    constructor(sw, ne) { this.points = []; if (sw) this.extend(sw); if (ne) this.extend(ne); }
+    extend(point) { this.points.push(point instanceof LatLng ? point.toJSON() : point); return this; }
+    getCenter() {
+      const lats = this.points.map(p => p.lat), lngs = this.points.map(p => p.lng);
+      return new LatLng({ lat: (Math.min(...lats) + Math.max(...lats)) / 2, lng: (Math.min(...lngs) + Math.max(...lngs)) / 2 });
+    }
+    toJSON() {
+      const lats = this.points.map(p => p.lat), lngs = this.points.map(p => p.lng);
+      return { north: Math.max(...lats), south: Math.min(...lats), east: Math.max(...lngs), west: Math.min(...lngs) };
+    }
   }
   class Map extends Events {
     constructor(div, options) {
@@ -31,17 +45,40 @@
     getHeading() { return 0; }
     getTilt() { return 0; }
     getBounds() { return { toJSON: () => ({ north: 36, south: 25, east: -93, west: -107 }) }; }
+    getProjection() { return {}; }
+    getMapCapabilities() { return { isAdvancedMarkersAvailable: true }; }
     moveCamera(options) { this.setOptions(options); }
     panTo(center) { this.options.center = center; }
-    setZoom(zoom) { this.options.zoom = zoom; }
-    fitBounds() {}
+    setZoom(zoom) { this.options.zoom = zoom; this.emit('idle'); }
+    // Records calls so tests can assert statewide framing. Not a projection:
+    // any fit settles on a fixed statewide zoom.
+    fitBounds(bounds, padding) {
+      const literal = bounds instanceof LatLngBounds ? bounds.toJSON() : bounds;
+      (window.__mapsSdkFitBoundsCalls ||= []).push({ bounds: literal, padding });
+      this.options.center = { lat: (literal.north + literal.south) / 2, lng: (literal.east + literal.west) / 2 };
+      this.options.zoom = 6;
+      this.emit('idle');
+    }
   }
+  // MarkerClusterer copies OverlayView's prototype with for...in, so these
+  // methods must be enumerable (plain assignments, not class methods).
+  function OverlayView() {}
+  OverlayView.prototype.setMap = function (map) {
+    if (this.__overlayMap === map) return;
+    if (this.__overlayMap) this.onRemove?.();
+    this.__overlayMap = map;
+    if (map) this.onAdd?.();
+  };
+  OverlayView.prototype.getMap = function () { return this.__overlayMap ?? null; };
+  OverlayView.prototype.getProjection = function () { return {}; };
+  OverlayView.prototype.getPanes = function () { return {}; };
   class AdvancedMarkerElement extends Events {
-    constructor() {
+    constructor(options = {}) {
       super();
       this.element = document.createElement('button');
       this.dataset = this.element.dataset;
-      this.element.addEventListener('click', () => this.emit('click', {}));
+      this.element.addEventListener('click', () => { this.emit('click', {}); this.emit('gmp-click', {}); });
+      Object.assign(this, options);
     }
     set map(map) { this._map = map; if (map) map.div.append(this.element); else this.element.remove(); }
     get map() { return this._map; }
@@ -76,7 +113,7 @@
   }
   const maps = window.google.maps;
   Object.assign(maps, {
-    Map, InfoWindow, Data, LatLng,
+    Map, InfoWindow, Data, LatLng, LatLngBounds, OverlayView,
     Size: class { constructor(width, height) { this.width = width; this.height = height; } },
     marker: { AdvancedMarkerElement },
     Settings: { getInstance: () => ({}) },
@@ -84,6 +121,7 @@
       addListener: (target, name, callback) => target.addListener(name, callback),
       clearInstanceListeners: target => { target.listeners = {}; },
       removeListener: listener => listener.remove(),
+      trigger: (target, name, ...args) => target.emit?.(name, ...args),
     },
     importLibrary: async name => name === 'marker' ? maps.marker : maps,
   });

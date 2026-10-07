@@ -9,7 +9,9 @@ test('directory chrome, committed search, details and default layers initialize'
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Texas Head Start Location Directory' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Map SDK test double' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Opportunities For Williamson/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Show all Texas' })).toBeVisible();
+  // Dense committed data clusters at statewide zoom; clusters must not block search/details.
+  await expect(page.getByRole('button', { name: /^\d+ Head Start locations\. Select to zoom in\.$/ }).first()).toBeVisible();
 
   const layers = page.locator('details');
   if (await layers.getAttribute('open') === null) await page.locator('summary').click();

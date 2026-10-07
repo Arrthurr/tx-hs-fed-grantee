@@ -12,9 +12,9 @@ not a credential and is never sent to Google.
 
 | Spec | What it proves | What it does not prove |
 | --- | --- | --- |
-| `app-shell.spec.ts` | Directory chrome, committed-data search/details, default layer states, region buttons | Live tiles, geocoding, API-key validity |
+| `app-shell.spec.ts` | Directory chrome, "Show all Texas", committed data clustering without blocking search/details, default layer states, region buttons | Live tiles, geocoding, API-key validity |
 | `loading-recovery.spec.ts` | Optional-region malformed/HTTP failure, keyboard retry, overlay removal, SDK abort/reload, authorization errors | Geographic rendering |
-| `map-accessibility.spec.ts` | 320px/390px/tablet/desktop details unobscured after selection, empty results, touch/mouse/keyboard toggles, region information without polygon clicks, fullscreen selection, resize | WCAG audit, live Maps controls |
+| `map-accessibility.spec.ts` | 320px/390px/tablet/desktop details unobscured after selection, empty results, touch/mouse/keyboard toggles, region information without polygon clicks, fullscreen selection, resize, one initial statewide fit plus "Show all Texas" refit, coincident locations clustered yet reachable via search, layer off clearing pins and clusters | WCAG audit, live Maps controls, real cluster geometry or click-to-zoom |
 
 Run from the repo root with no existing Vite server (or restart that server
 with the same test-only key):
@@ -30,6 +30,16 @@ attach `.env.local` or real credentials. Restart any existing Vite server
 so Playwright is not reusing a process started with a live key.
 
 No app-side test switches are added.
+
+The double implements only what `@vis.gl/react-google-maps` and
+`@googlemaps/markerclusterer` call: `OverlayView` (with enumerable prototype
+methods, because the clusterer copies them with `for...in`), `LatLngBounds`,
+`event.trigger`, `Map.getProjection` and an `AdvancedMarkerElement` that
+emits both `click` and `gmp-click`. `Map.fitBounds` records each call in
+`window.__mapsSdkFitBoundsCalls` and settles on a fixed zoom of 6. It has
+no projection, so clustering follows that zoom, and cluster clicks do not
+really zoom. It does not show real SDK transfer cost; see
+`docs/performance/map-loading.md`.
 
 ## Live Google Maps smoke (opt-in, not CI)
 
