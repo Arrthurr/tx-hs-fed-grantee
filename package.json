@@ -23,7 +23,7 @@
   "dependencies": {
     "@googlemaps/markerclusterer": "2.6.2",
     "@radix-ui/react-slot": "^1.0.2",
-    "@vis.gl/react-google-maps": "1.8.3",
+    "@vis.gl/react-google-maps": "1.10.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "lucide-react": "^0.344.0",
