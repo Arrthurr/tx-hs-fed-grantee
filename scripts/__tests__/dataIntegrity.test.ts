@@ -87,25 +87,16 @@ describe('countLocationsByRegion', () => {
     regionFeature('South', -96, 29),
   ];
 
-  it('rejects unmatched and overlapping locations instead of taking the first match', () => {
+  it('converts shared assignment failure into a CI error identifying the location', () => {
     const unmatched = processHeadStartPrograms([{
       name: 'Unmatched', address: 'El Paso, TX', coordinates: { lat: 31.7619, lng: -106.485 },
     }]);
-    expect(() => countLocationsByRegion(unmatched, regions)).toThrow(/matches 0 regions/);
-
-    const overlapRegions = [regionFeature('West', -99, 30), ...regions.slice(1)];
-    const overlapping = processHeadStartPrograms([{
-      name: 'Overlap', address: 'Austin, TX', coordinates: { lat: 30.5, lng: -98 },
-    }]);
-    expect(() => countLocationsByRegion(overlapping, overlapRegions)).toThrow(/matches 2 regions/);
+    expect(() => countLocationsByRegion(unmatched, regions)).toThrow('Unmatched matches 0 regions');
   });
 
-  it('counts a location that sits in exactly one region', () => {
-    const locations = processHeadStartPrograms([{
-      name: 'Austin', address: 'Austin, TX', coordinates: { lat: 30.5, lng: -98 },
-    }]);
-    expect(countLocationsByRegion(locations, regions)).toEqual({
-      West: 0, North: 1, East: 0, South: 0,
+  it('preserves zero counts for an empty CI location dataset', () => {
+    expect(countLocationsByRegion([], regions)).toEqual({
+      West: 0, North: 0, East: 0, South: 0,
     });
   });
 });

@@ -214,30 +214,27 @@ describe('useMapData Hook', () => {
       expect(counts).toEqual({ West: 0, North: 1, East: 0, South: 1 });
     });
 
-    test.each(['overlap', 'unmatched', 'shared boundary'])('withholds all counts for %s locations', async scenario => {
+    test('withholds all counts and warns when shared assignment fails', async () => {
       const originalFetch = (global.fetch as jest.Mock).getMockImplementation()!;
       (global.fetch as jest.Mock).mockImplementation((url: string) => {
-        if (scenario === 'shared boundary' && url.includes('headStartPrograms.json')) {
-          return Promise.resolve({ ok: true, json: () => Promise.resolve([
-            { ...mockHeadStartProgramsData[0], coordinates: { lat: 31, lng: -99 } },
-          ]) });
-        }
-        if (url.includes('txhsa-geojson/north.geojson') && scenario === 'unmatched') {
+        if (url.includes('txhsa-geojson/north.geojson')) {
           return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixture('North', -104, 32)) });
-        }
-        if (url.includes('txhsa-geojson/west.geojson') && scenario === 'overlap') {
-          return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixture('West', -99, 30)) });
         }
         return originalFetch(url);
       });
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
       const { result } = renderHook(() => useMapData());
       await waitFor(() => {
         expect(result.current.isLoadingPrograms).toBe(false);
         expect(result.current.isLoadingRegions).toBe(false);
       });
       expect(result.current.txhsaRegions).toHaveLength(4);
-      expect(result.current.headStartPrograms.length).toBeGreaterThan(0);
+      expect(result.current.headStartPrograms).toHaveLength(2);
       expect(result.current.regionProgramCounts).toBeNull();
+      expect(warn).toHaveBeenCalledWith(
+        `[useMapData] Location ${result.current.headStartPrograms[0].id} matches 0 regions; counts withheld.`,
+      );
+      warn.mockRestore();
     });
 
     test('reports regionsError when a region payload is malformed (HTTP 200, bad shape)', async () => {

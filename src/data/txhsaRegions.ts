@@ -1,7 +1,27 @@
-import type { TxhsaRegion, TxhsaRegionFeature, TxhsaRegionName } from '../types/maps';
-import { isValidPolygonGeometry } from '../utils/geometry';
+import type { HeadStartProgram, TxhsaRegion, TxhsaRegionFeature, TxhsaRegionName } from '../types/maps';
+import { isPointInPolygon, isValidPolygonGeometry } from '../utils/geometry';
 
 export const TXHSA_REGION_NAMES: readonly TxhsaRegionName[] = ['West', 'North', 'East', 'South'] as const;
+
+type RegionCountsResult =
+  | { ok: true; counts: Record<TxhsaRegionName, number> }
+  | { ok: false; location: HeadStartProgram; matchCount: number };
+
+/** Count accepted locations against validated features; never publish partial counts. */
+export const countLocationsByRegion = (
+  locations: readonly HeadStartProgram[],
+  regions: readonly TxhsaRegionFeature[],
+): RegionCountsResult => {
+  const counts: Record<TxhsaRegionName, number> = { West: 0, North: 0, East: 0, South: 0 };
+  for (const location of locations) {
+    const matches = regions.filter(region => isPointInPolygon(location.lat, location.lng, region.geometry));
+    if (matches.length !== 1) {
+      return { ok: false, location, matchCount: matches.length };
+    }
+    counts[matches[0].properties.name] += 1;
+  }
+  return { ok: true, counts };
+};
 
 /**
  * Validate a raw region feature loaded from a region geojson file.
@@ -18,6 +38,21 @@ export const validateTxhsaRegion = (feature: unknown): feature is TxhsaRegionFea
   if (!TXHSA_REGION_NAMES.includes(props.name as TxhsaRegionName)) return false;
 
   return isValidPolygonGeometry(f.geometry);
+};
+
+/** Parse the single named feature in a region file, independently of how it was read. */
+export const parseTxhsaRegionCollection = (
+  data: unknown,
+  expectedName: TxhsaRegionName,
+): TxhsaRegionFeature => {
+  const collection = data as { type?: unknown; features?: unknown[] } | null;
+  if (collection?.type !== 'FeatureCollection' || collection.features?.length !== 1) {
+    throw new Error(`Invalid region collection: ${expectedName}`);
+  }
+  const feature = collection.features[0];
+  if (!validateTxhsaRegion(feature)) throw new Error(`Invalid region: ${expectedName}`);
+  if (feature.properties.name !== expectedName) throw new Error(`Region name mismatch: ${expectedName}`);
+  return feature;
 };
 
 /**
