@@ -214,30 +214,54 @@ describe('useMapData Hook', () => {
       expect(counts).toEqual({ West: 0, North: 1, East: 0, South: 1 });
     });
 
-    test.each(['overlap', 'unmatched', 'shared boundary'])('withholds all counts for %s locations', async scenario => {
+    test('withholds all counts and warns when shared assignment fails', async () => {
       const originalFetch = (global.fetch as jest.Mock).getMockImplementation()!;
       (global.fetch as jest.Mock).mockImplementation((url: string) => {
-        if (scenario === 'shared boundary' && url.includes('headStartPrograms.json')) {
-          return Promise.resolve({ ok: true, json: () => Promise.resolve([
-            { ...mockHeadStartProgramsData[0], coordinates: { lat: 31, lng: -99 } },
-          ]) });
-        }
-        if (url.includes('txhsa-geojson/north.geojson') && scenario === 'unmatched') {
+        if (url.includes('txhsa-geojson/north.geojson')) {
           return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixture('North', -104, 32)) });
-        }
-        if (url.includes('txhsa-geojson/west.geojson') && scenario === 'overlap') {
-          return Promise.resolve({ ok: true, json: () => Promise.resolve(regionFixture('West', -99, 30)) });
         }
         return originalFetch(url);
       });
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
       const { result } = renderHook(() => useMapData());
       await waitFor(() => {
         expect(result.current.isLoadingPrograms).toBe(false);
         expect(result.current.isLoadingRegions).toBe(false);
       });
       expect(result.current.txhsaRegions).toHaveLength(4);
-      expect(result.current.headStartPrograms.length).toBeGreaterThan(0);
+      expect(result.current.headStartPrograms).toHaveLength(2);
       expect(result.current.regionProgramCounts).toBeNull();
+      expect(warn).toHaveBeenCalledWith(
+        `[useMapData] Location ${result.current.headStartPrograms[0].id} matches 0 regions; counts withheld.`,
+      );
+      warn.mockRestore();
+    });
+
+    test('rejects a wrong-name region file without losing programs and recovers on retry', async () => {
+      const originalFetch = (global.fetch as jest.Mock).getMockImplementation()!;
+      const { result } = renderHook(() => useMapData());
+      await waitFor(() => expect(result.current.regionProgramCounts).toEqual({ West: 0, North: 1, East: 0, South: 1 }));
+      act(() => { result.current.toggleLayer('txhsaRegions'); });
+      expect(result.current.layerVisibility.txhsaRegions).toBe(true);
+
+      (global.fetch as jest.Mock).mockImplementation((url: string) => url.includes('txhsa-geojson/west.geojson')
+        ? Promise.resolve({ ok: true, json: async () => regionFixtures.north })
+        : originalFetch(url));
+      await act(async () => { await result.current.loadTxhsaRegions(); });
+      expect(result.current.regionsError).toContain('Invalid TXHSA region payload at /assets/txhsa-geojson/west.geojson');
+      expect(result.current.txhsaRegions).toEqual([]);
+      expect(result.current.regionProgramCounts).toBeNull();
+      expect(result.current.layerVisibility.txhsaRegions).toBe(false);
+      expect(result.current.headStartPrograms).toHaveLength(2);
+      expect(result.current.programsError).toBeNull();
+      expect(result.current.isLoadingRegions).toBe(false);
+
+      (global.fetch as jest.Mock).mockImplementation(originalFetch);
+      await act(async () => { result.current.retryLoading(); });
+      expect(result.current.regionsError).toBeNull();
+      expect(result.current.txhsaRegions.map(region => region.name)).toEqual(['West', 'North', 'East', 'South']);
+      expect(result.current.regionProgramCounts).toEqual({ West: 0, North: 1, East: 0, South: 1 });
+      expect(result.current.layerVisibility.txhsaRegions).toBe(false);
     });
 
     test('reports regionsError when a region payload is malformed (HTTP 200, bad shape)', async () => {

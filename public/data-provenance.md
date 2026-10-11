@@ -37,6 +37,18 @@ For the supplied snapshot, program type and legal grantee are **unknown**, not i
 Program-level funding is unavailable. Coordinates are decimal degrees,
 interpreted as latitude/longitude; their original datum is undocumented.
 
+## Redistribution status
+
+Software licensing does not license data. The repository's software license
+status (see `LICENSE.md` in the repository; no license grant is recorded) does
+not cover the location snapshot, the county boundary source or the generated
+TXHSA region boundaries. Redistribution terms for all three remain **unknown**;
+owner confirmation is outstanding and tracked in
+`docs/operations/release-runbook.md` (owner actions) from
+[issue #16](https://github.com/Arrthurr/tx-hs-fed-grantee/issues/16).
+Files under `public/` are served publicly by the deployed site; public
+availability is not a grant of reuse or redistribution rights.
+
 ## Accepted raw record contract
 
 Every row must have non-empty string `name` and `address` and a `coordinates`

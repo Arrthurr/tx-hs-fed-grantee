@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
-import { MapPin, Users, DollarSign, Building2, MapIcon, X } from 'lucide-react';
+import { Map, useMap } from '@vis.gl/react-google-maps';
+import { MapPin, Users, DollarSign, Building2, MapIcon, Maximize2, X } from 'lucide-react';
 import { useMapData } from '../hooks/useMapData';
 import { useSearch } from '../hooks/useSearch';
 import type { HeadStartProgram, TxhsaRegion, TxhsaRegionName } from '../types/maps';
@@ -8,6 +8,7 @@ import { formatCurrency } from '../utils/mapHelpers';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorDisplay from './ErrorDisplay';
 import MapControls from './MapControls';
+import ProgramMarkers from './ProgramMarkers';
 import SearchBar from './SearchBar';
 import SearchResults from './SearchResults';
 
@@ -38,6 +39,20 @@ const REGION_FILL_COLORS: Record<TxhsaRegionName, string> = {
 };
 
 const regionFillColor = (name: TxhsaRegionName): string => REGION_FILL_COLORS[name];
+
+/**
+ * Statewide camera: approximate Texas extent. Applied once per map instance
+ * (via Map's defaultBounds) and on "Show all Texas"; never on data,
+ * selection or viewport changes.
+ */
+const TEXAS_BOUNDS: google.maps.LatLngBoundsLiteral = {
+  west: -106.65,
+  east: -93.5,
+  south: 25.84,
+  north: 36.5,
+};
+const TEXAS_BOUNDS_PADDING = 24;
+const TEXAS_DEFAULT_BOUNDS = { ...TEXAS_BOUNDS, padding: TEXAS_BOUNDS_PADDING };
 
 /**
  * Main TexasMap component that renders an interactive Google Map
@@ -93,23 +108,6 @@ const TexasMap: React.FC<TexasMapProps> = ({
   // State for map loading
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  /**
-   * Default map center coordinates (Texas geographic center)
-   * Latitude: 31.0545, Longitude: -97.5635
-   */
-  const defaultCenter = { lat: 31.0545, lng: -101.0635 };
-  
-  /**
-   * Default zoom level for Texas state view
-   */
-  const defaultZoom = 6;
-
-  /**
-   * Handle map load event
-   * Sets up the map reference for direct API access
-   */
-  // Remove the handleMapLoad function since we're using useMap hook
-
   const handleSelectDetails = useCallback((data: Selection, trigger?: HTMLElement) => {
     const active = trigger ?? document.activeElement;
     selectionTriggerRef.current = active instanceof HTMLElement && !detailsRef.current?.contains(active) ? active : null;
@@ -162,6 +160,13 @@ const TexasMap: React.FC<TexasMapProps> = ({
     }
   }, [handleSelectDetails, map]);
 
+  const handleSelectProgramMarker = useCallback((program: HeadStartProgram) => {
+    handleSelectDetails({ program });
+  }, [handleSelectDetails]);
+
+  const handleShowAllTexas = useCallback(() => {
+    map?.fitBounds(TEXAS_BOUNDS, TEXAS_BOUNDS_PADDING);
+  }, [map]);
 
 
   /**
@@ -435,6 +440,15 @@ const TexasMap: React.FC<TexasMapProps> = ({
           regionsAvailable={txhsaRegions.length > 0}
           onRetryRegions={loadTxhsaRegions}
         />
+        <button
+          type="button"
+          onClick={handleShowAllTexas}
+          disabled={!map}
+          className="btn-secondary w-full min-h-[44px] flex items-center justify-center gap-2 border border-tx-gray-200 disabled:opacity-60 disabled:cursor-not-allowed focus-visible:outline focus-visible:outline-2 focus-visible:outline-tx-blue-600"
+        >
+          <Maximize2 className="w-4 h-4" aria-hidden="true" />
+          Show all Texas
+        </button>
         {!isLoadingRegions && !regionsError && txhsaRegions.length > 0 && (
           <div role="group" aria-label="Region information">
             <p className="text-xs font-medium text-tx-gray-600 mb-1">View region details (boundaries optional)</p>
@@ -492,8 +506,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
       <div className="relative min-w-0 self-start" style={{ height }}>
       <Map
         mapId={mapId}
-        defaultCenter={defaultCenter}
-        defaultZoom={defaultZoom}
+        defaultBounds={TEXAS_DEFAULT_BOUNDS}
         gestureHandling="greedy"
         disableDefaultUI={false}
         mapTypeControl={true}
@@ -502,41 +515,10 @@ const TexasMap: React.FC<TexasMapProps> = ({
         zoomControl={true}
         className="w-full h-full"
       >
-        {/* Head Start Program Markers */}
-        {layerVisibility.headStartPrograms && headStartPrograms && headStartPrograms.map((program) => (
-          <AdvancedMarker
-            key={`program-${program.id}`}
-            position={{ lat: program.lat, lng: program.lng }}
-            onClick={() => handleSelectDetails({ program })}
-            title={program.name}
-          >
-            <div 
-              className="marker-headstart"
-              style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                backgroundColor: 'var(--headstart-primary)',
-                border: '2px solid #ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-              }}
-            >
-              <div 
-                style={{
-                  color: '#ffffff',
-                  fontSize: '14px',
-                  fontWeight: 'bold'
-                }}
-              >
-                +
-              </div>
-            </div>
-          </AdvancedMarker>
-        ))}
-
+        {/* Head Start location markers, clustered when dense */}
+        {layerVisibility.headStartPrograms && (
+          <ProgramMarkers programs={headStartPrograms} onSelectProgram={handleSelectProgramMarker} />
+        )}
       </Map>
       </div>
     </div>

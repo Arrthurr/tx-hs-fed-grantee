@@ -13,12 +13,15 @@ jest.mock('@vis.gl/react-google-maps', () => ({
   APIProvider: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="api-provider">{children}</div>
   ),
-  Map: ({ children }: { children: React.ReactNode }) => (
+  Map: jest.fn(({ children }: { children: React.ReactNode }) => (
     <div data-testid="google-map">{children}</div>
-  ),
-  AdvancedMarker: ({ children, onClick }: { children: React.ReactNode; onClick?: () => void }) => (
-    <div data-testid="advanced-marker" onClick={onClick}>{children}</div>
-  ),
+  )),
+  AdvancedMarker: require('react').forwardRef(({ children, onClick, title }: { children: React.ReactNode; onClick?: () => void; title?: string }, ref: any) => {
+    const { useImperativeHandle, useRef } = require('react');
+    const marker = useRef({ title });
+    useImperativeHandle(ref, () => marker.current, []);
+    return <div data-testid="advanced-marker" onClick={onClick}>{children}</div>;
+  }),
   Pin: () => <div data-testid="map-pin" />,
   useMap: jest.fn().mockReturnValue({
     panTo: jest.fn(),
@@ -104,6 +107,7 @@ describe('TexasMap Component', () => {
       loadTxhsaRegions: jest.fn(),
     } as any);
     (global as any).__resetMapDataInstances?.();
+    (global as any).__resetClustererInstances?.();
   });
 
   // Mock the TexasMap component with API Provider wrapper
@@ -151,6 +155,66 @@ describe('TexasMap Component', () => {
     // Check that no markers are rendered
     const markers = screen.queryAllByTestId('advanced-marker');
     expect(markers.length).toBe(0);
+  });
+
+  test('frames all of Texas once via defaultBounds instead of a fixed western center', () => {
+    const { Map: MockMap } = require('@vis.gl/react-google-maps');
+    render(<TexasMapWithProvider />);
+    const calls = (MockMap as jest.Mock).mock.calls;
+    const props = calls[calls.length - 1][0];
+    expect(props.defaultBounds).toEqual({ west: -106.65, east: -93.5, south: 25.84, north: 36.5, padding: 24 });
+    expect(props.defaultCenter).toBeUndefined();
+    expect(props.defaultZoom).toBeUndefined();
+  });
+
+  test('Show all Texas refits the statewide bounds without changing the selection', async () => {
+    const { useMap } = require('@vis.gl/react-google-maps');
+    const map = useMap();
+    render(<TexasMapWithProvider />);
+    fireEvent.click(screen.getAllByTestId('advanced-marker')[0]);
+    await screen.findByRole('region', { name: 'Test Program 1' });
+    expect(map.fitBounds).not.toHaveBeenCalled();
+    const button = screen.getByRole('button', { name: 'Show all Texas' });
+    expect(button).toHaveClass('min-h-[44px]');
+    fireEvent.click(button);
+    expect(map.fitBounds).toHaveBeenCalledTimes(1);
+    expect(map.fitBounds).toHaveBeenCalledWith({ west: -106.65, east: -93.5, south: 25.84, north: 36.5 }, 24);
+    expect(screen.getByRole('region', { name: 'Test Program 1' })).toBeInTheDocument();
+  });
+
+  test('adds every program marker to a single clusterer and detaches it when the layer is hidden', async () => {
+    const { rerender } = render(<TexasMapWithProvider />);
+    const clusterers = (global as any).__getClustererInstances();
+    await waitFor(() => expect(clusterers).toHaveLength(1));
+    await waitFor(() => expect(clusterers[0].markers).toHaveLength(2));
+    expect(clusterers[0].markers.map((m: any) => m.title)).toEqual(['Test Program 1', 'Test Program 2']);
+
+    mockUseMapData.mockReturnValue({
+      ...mockUseMapData(),
+      layerVisibility: { majorCities: false, counties: false, headStartPrograms: false, txhsaRegions: false },
+    } as any);
+    rerender(<TexasMapWithProvider />);
+    expect(screen.queryAllByTestId('advanced-marker')).toHaveLength(0);
+    expect(clusterers[0].setMap).toHaveBeenCalledWith(null);
+    expect(clusterers[0].markers).toHaveLength(0);
+  });
+
+  test('search selection works for clustered and coincident locations', async () => {
+    const { useMap } = require('@vis.gl/react-google-maps');
+    const map = useMap();
+    mockUseMapData.mockReturnValue({
+      ...mockUseMapData(),
+      headStartPrograms: [
+        mockHeadStartPrograms[0],
+        { ...mockHeadStartPrograms[0], id: 'program-3', name: 'Coincident Program' },
+      ],
+    } as any);
+    render(<TexasMapWithProvider />);
+    fireEvent.change(screen.getByRole('textbox', { name: 'Search Head Start programs' }), { target: { value: 'Coincident' } });
+    fireEvent.click(screen.getByRole('button', { name: 'View Coincident Program' }));
+    expect(await screen.findByRole('region', { name: 'Coincident Program' })).toBeInTheDocument();
+    expect(map.panTo).toHaveBeenCalledWith({ lat: 30.2672, lng: -97.7431 });
+    expect(map.setZoom).toHaveBeenCalledWith(12);
   });
 
   test('renders details when a program is selected', async () => {
