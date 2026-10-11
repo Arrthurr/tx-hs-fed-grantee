@@ -152,3 +152,57 @@ test('resizing preserves selection, focus and layer controls without manual repo
   await expect(programs).toHaveAttribute('aria-pressed', 'false');
   await expect(page.getByText('Drag to Move')).toHaveCount(0);
 });
+
+test('Show all Texas refits statewide bounds without moving a selected location camera', async ({ page }) => {
+  await page.goto('/');
+  const showAll = page.getByRole('button', { name: 'Show all Texas' });
+  await expect(showAll).toBeEnabled();
+  const texas = { bounds: { west: -106.65, east: -93.5, south: 25.84, north: 36.5 }, padding: 24 };
+  const fits = () => page.evaluate(() => (window as unknown as { __mapsSdkFitBoundsCalls?: unknown[] }).__mapsSdkFitBoundsCalls ?? []);
+  // Initial statewide framing happens exactly once per map instance.
+  await expect.poll(fits).toEqual([texas]);
+  const box = await showAll.boundingBox();
+  expect(box && box.height >= 44).toBeTruthy();
+
+  await page.getByRole('textbox', { name: 'Search Head Start programs' }).fill('El Paso');
+  await page.getByRole('button', { name: 'View Accessibility El Paso' }).click();
+  await expect(page.getByRole('heading', { name: 'Accessibility El Paso' })).toBeFocused();
+  expect(await fits()).toEqual([texas]);
+
+  await showAll.click();
+  await expect.poll(fits).toEqual([texas, texas]);
+  // Refitting does not discard the selected details.
+  await expect(page.getByRole('region', { name: 'Accessibility El Paso' })).toBeVisible();
+});
+
+test('clustered and coincident locations stay reachable through search and clear with the layer', async ({ page }) => {
+  await page.route('**/assets/geojson/headStartPrograms.json', route => route.fulfill({ json: [
+    { name: 'Cluster Houston North', address: '1 Main St, Houston, TX', coordinates: { lat: 29.7604, lng: -95.3698 } },
+    { name: 'Cluster Houston South', address: '2 Main St, Houston, TX', coordinates: { lat: 29.7604, lng: -95.3698 } },
+    { name: 'Cluster El Paso', address: 'El Paso, TX', coordinates: { lat: 31.7619, lng: -106.485 } },
+  ] }));
+  await page.goto('/');
+  const cluster = page.getByRole('button', { name: '2 Head Start locations. Select to zoom in.' });
+  await expect(cluster).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Cluster El Paso', exact: true })).toBeVisible();
+  // Coincident members are represented by the cluster, not stacked pins.
+  await expect(page.getByRole('button', { name: 'Cluster Houston South', exact: true })).toHaveCount(0);
+
+  await page.getByRole('textbox', { name: 'Search Head Start programs' }).fill('Houston South');
+  await page.getByRole('button', { name: 'View Cluster Houston South' }).click();
+  const details = page.getByRole('region', { name: 'Cluster Houston South' });
+  await expect(details).toContainText('2 Main St, Houston, TX');
+  await expect(details.getByRole('heading', { name: 'Cluster Houston South' })).toBeFocused();
+  await page.getByRole('button', { name: 'Back to results' }).click();
+  await expect(page.getByRole('button', { name: 'View Cluster Houston South' })).toBeFocused();
+
+  const layers = page.locator('details');
+  if (await layers.getAttribute('open') === null) await page.locator('summary').click();
+  const programs = page.getByRole('button', { name: 'Toggle Head Start programs layer' });
+  await programs.click();
+  await expect(programs).toHaveAttribute('aria-pressed', 'false');
+  await expect(cluster).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Cluster El Paso', exact: true })).toHaveCount(0);
+  await programs.click();
+  await expect(page.getByRole('button', { name: '2 Head Start locations. Select to zoom in.' })).toBeVisible();
+});
