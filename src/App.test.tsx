@@ -164,6 +164,22 @@ describe('App', () => {
   });
 
   describe('API load lifecycle', () => {
+    test('requests no optional Maps libraries and keeps the list stable across renders', async () => {
+      const { rerender } = render(<App />);
+      await waitFor(() => {
+        expect(screen.getByTestId('api-provider')).toBeInTheDocument();
+      });
+      const first = (getLastApiProps() as { libraries?: string[] }).libraries;
+      expect(first).toEqual([]);
+      rerender(<App />);
+      const calls = (ApiProviderMock as unknown as jest.Mock).mock.calls;
+      for (const [props] of calls) {
+        expect(props.libraries).toBe(first);
+        expect(props.libraries).not.toContain('places');
+        expect(props.libraries).not.toContain('geometry');
+      }
+    });
+
     test('shows a loading spinner before the Maps script fires onLoad', async () => {
       render(<App />);
       await waitFor(() => {

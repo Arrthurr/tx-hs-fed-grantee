@@ -33,24 +33,40 @@ boundaries.
 - Playwright loading-recovery and responsive accessibility tests using a Google SDK test double
 - `@turf/union` + `tsx` for build-time region dissolves
 
+## Exposure
+
+The production site, <https://texasheadstartgrantees.online/> (Netlify), is a
+**public directory with no authentication**. Everything under `public/`, the
+browser bundles and every `VITE_*` variable are public. Do not put secrets in
+them. Authentication is not part of the app and should only be added for an
+agreed requirement.
+
 ## Setup
 
-Install dependencies:
+Requirements: Node.js 22.12 or newer on the 22 major (`package.json`
+`engines`; CI uses Node 22, `.nvmrc` pins 22.22.0) and npm. Use the lockfile
+for clean checkouts:
 
 ```bash
-npm install
+npm ci
 ```
 
-Create `.env.local` in the project root:
+Create your local environment file from the committed placeholder template:
+
+```bash
+cp .env.example .env.local
+```
 
 ```env
 VITE_GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
-VITE_GOOGLE_MAPS_MAP_ID=your_optional_map_id_here
+# VITE_GOOGLE_MAPS_MAP_ID=your_map_id_here
 ```
 
-`VITE_GOOGLE_MAPS_API_KEY` is required for the map to render. The key needs the
-Google Maps JavaScript API enabled. In production, restrict the key to the
-deployed domain.
+Live-key gate: the map will not render with the placeholder. Replace it with a
+real Google Maps browser key that has the Maps JavaScript API enabled and is
+restricted by HTTP referrer. Unit tests, `npm run test:data`, the Playwright
+SDK-double suite and `npm run build` do not need a real key. `.env.local` is
+gitignored; never commit a real key. Restart the dev server after changing it.
 
 Start the development server:
 
@@ -84,6 +100,29 @@ These lifecycle files must reach the project's default branch before new orbs
 use them. Exact snapshots skip setup; stale snapshots rerun the fast install
 against the updated lockfile. To verify locally, run `.agents/setup` twice and
 then `.agents/resume`.
+
+## Deployment and operations
+
+Netlify builds with `npm run build` and publishes `dist` using Node 22.22.0
+(`netlify.toml`, which also sets cache headers: only hashed JS/CSS are
+immutable). Release smoke, rollback, data refresh, incident handling,
+source-map policy and outstanding owner actions are in the
+[release runbook](docs/operations/release-runbook.md).
+
+Monitoring is manual: there is no telemetry or error-reporting service and no
+unattended application-error alerts. Production builds strip console output and
+do not publish source maps; diagnose reports from the deployed commit and local
+reproduction. Report problems through GitHub issues.
+
+Loading and payload notes live in
+[`docs/performance/map-loading.md`](docs/performance/map-loading.md).
+
+## License
+
+No license grant has been recorded for the original code (`"license":
+"UNLICENSED"`); see [LICENSE.md](LICENSE.md). Dependencies keep their own
+licenses. Data redistribution terms are unknown and are not covered by any
+software license; see [data provenance](public/data-provenance.md).
 
 ## Commands
 
@@ -133,8 +172,14 @@ public/
 
 docs/
   brainstorms/
+  operations/     Release runbook and owner actions
+  performance/    Map loading and payload notes
   plans/
+  security/       Advisory review and exceptions
   solutions/
+
+netlify.toml      Netlify build, Node version and cache headers
+.env.example      Placeholder environment template
 ```
 
 ## Data
@@ -244,7 +289,9 @@ npm run build
 
 Playwright's default suite intercepts the Google Maps SDK and runs in CI.
 It covers initialization, search/details, layer toggles, region failure/retry,
-and mobile details. A live Google Maps smoke test is opt-in
+and mobile details. CI runs it on Chromium only; other browsers are not
+tested, and accessibility checks are not a WCAG conformance audit.
+A live Google Maps smoke test is opt-in
 (`LIVE_GOOGLE_MAPS=1`) and is not run in CI, including on fork PRs.
 See `src/e2e/README.md`.
 
