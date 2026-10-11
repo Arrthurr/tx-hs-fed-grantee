@@ -3,8 +3,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import type { BuildResult } from './build-txhsa-regions';
 import { tdemToTxhsaRegion } from '../src/data/tdemCountyRegions';
-import { TXHSA_REGION_NAMES, validateTxhsaRegion } from '../src/data/txhsaRegions';
-import { isPointInPolygon, isValidPolygonGeometry } from '../src/utils/geometry';
+import { TXHSA_REGION_NAMES, countLocationsByRegion as countRegionLocations, parseTxhsaRegionCollection } from '../src/data/txhsaRegions';
+import { isValidPolygonGeometry } from '../src/utils/geometry';
 import type { HeadStartProgram, TxhsaRegionFeature, TxhsaRegionName } from '../src/types/maps';
 
 export const COMMITTED_COUNTY_COUNT = 254;
@@ -67,28 +67,18 @@ export const assertCountySourceInvariants = (
 export const loadCommittedRegions = (dir = COMMITTED_REGION_DIR): TxhsaRegionFeature[] =>
   TXHSA_REGION_NAMES.map(name => {
     const collection = readJson(path.join(dir, `${name.toLowerCase()}.geojson`));
-    if (collection.type !== 'FeatureCollection' || collection.features?.length !== 1) {
-      throw new Error(`Invalid region collection: ${name}`);
-    }
-    const feature = collection.features[0];
-    if (!validateTxhsaRegion(feature)) throw new Error(`Invalid region: ${name}`);
-    if (feature.properties.name !== name) throw new Error(`Region name mismatch: ${name}`);
-    return feature;
+    return parseTxhsaRegionCollection(collection, name);
   });
 
 export const countLocationsByRegion = (
   locations: HeadStartProgram[],
   regions: TxhsaRegionFeature[],
 ): Record<TxhsaRegionName, number> => {
-  const counts: Record<TxhsaRegionName, number> = { West: 0, North: 0, East: 0, South: 0 };
-  for (const location of locations) {
-    const matches = regions.filter(region => isPointInPolygon(location.lat, location.lng, region.geometry));
-    if (matches.length !== 1) {
-      throw new Error(`${location.name} matches ${matches.length} regions`);
-    }
-    counts[matches[0].properties.name] += 1;
+  const result = countRegionLocations(locations, regions);
+  if (!result.ok) {
+    throw new Error(`${result.location.name} matches ${result.matchCount} regions`);
   }
-  return counts;
+  return result.counts;
 };
 
 export const assertGeneratedMatchesCommitted = (
