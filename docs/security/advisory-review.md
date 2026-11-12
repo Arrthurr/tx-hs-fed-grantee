@@ -76,4 +76,6 @@ These were present after the 2026-10-06 updates. They are moderate, have no comp
 | [GHSA-rj75-hqrm-r3gf](https://github.com/advisories/GHSA-rj75-hqrm-r3gf) | `postcss-selector-parser` | Tailwind 3 still pulls a 6.x copy. The advisory range is `<7.1.6`, so 6.1.4 stays flagged. Forcing 7.x would be an unverified Tailwind 3 break. Quadratic selector parsing is a CSS-build DoS, not production request handling. |
 | [GHSA-hp3w-g68c-fv3c](https://github.com/advisories/GHSA-hp3w-g68c-fv3c) | `sprintf-js` | Latest 1.1.3 is still in range. It arrives through `argparse@1` → `js-yaml@3` → Jest Istanbul config loading. npm’s suggested parent fix is ts-jest 27, which is a downgrade. Untrusted YAML is not fed to that path. |
 
-Inherited package rows under `jest` / `ts-jest` / `tailwindcss` in `npm audit` count those two GHSAs plus the braces exception, not dozens of independent exploits.
+Inherited package rows under `jest` / `ts-jest` / `tailwindcss` in `npm audit` can repeat the same underlying advisories; they are not independent exploits.
+
+On 2026-11-12, the current audit no longer reported `GHSA-vfj7-8cjw-p6xm` for `braces`, so its unused development exception was removed. The audit had zero high/critical findings, and no exceptions remained. The gate still rejects new high/critical findings and stale, unused or mismatched exceptions.
