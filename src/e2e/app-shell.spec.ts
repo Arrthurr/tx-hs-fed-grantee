@@ -51,16 +51,29 @@ for (const width of [1280, 390, 320]) {
     await expect(result).toBeFocused();
     await page.waitForTimeout(750);
 
+    if (width === 320) {
+      // Also cover a user-scrolled row at the viewport edge, where fractional
+      // coordinates can leave the button or its focus outline clipped.
+      const regionTop = await page.getByRole('button', { name: 'View South region' })
+        .evaluate(button => button.getBoundingClientRect().top);
+      await page.mouse.wheel(0, regionTop);
+      await page.waitForTimeout(750);
+    }
+
     // Use real backward Tab navigation, not locator.focus()/scrollIntoView(),
     // which can hide a native focus-scrolling regression under the sticky header.
     for (let step = 0; step < 20; step += 1) {
       await page.keyboard.press('Shift+Tab');
+      // A visible animation frame can precede a clipped final scroll position.
+      await page.waitForTimeout(750);
       const focused = page.locator(':focus');
       await expect.poll(() => focused.evaluate(el => {
         const rect = el.getBoundingClientRect();
+        const style = getComputedStyle(el);
+        const outline = Math.max(0, parseFloat(style.outlineWidth) + parseFloat(style.outlineOffset));
         const headerBottom = document.querySelector('header')?.getBoundingClientRect().bottom ?? 0;
         const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
-        return rect.top >= Math.max(0, headerBottom) && rect.bottom <= innerHeight && (hit === el || el.contains(hit));
+        return rect.top - outline >= Math.max(0, headerBottom) && rect.bottom + outline <= innerHeight && (hit === el || el.contains(hit));
       })).toBe(true);
       if (await search.evaluate(el => el === document.activeElement)) break;
     }

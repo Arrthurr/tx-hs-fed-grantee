@@ -58,8 +58,8 @@
   }
   
   html {
-    /* Reserve the desktop sticky header for native keyboard-focus scrolling. */
-    @apply lg:scroll-pt-32;
+    /* Keep focus outlines inside the viewport and below the desktop header. */
+    @apply scroll-pt-2 lg:scroll-pt-32;
     font-family: var(--font-family-sans);
     scroll-behavior: smooth;
   }
