@@ -481,7 +481,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
             ref={detailsRef}
             role="region"
             aria-labelledby="selected-details-title"
-            className="border border-tx-gray-200 bg-white rounded-lg scroll-mt-4 lg:scroll-mt-32"
+            className="border border-tx-gray-200 bg-white rounded-lg scroll-mt-4"
             onKeyDown={event => {
               if (event.key === 'Escape') {
                 event.stopPropagation();
