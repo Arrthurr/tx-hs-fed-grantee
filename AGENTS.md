@@ -14,7 +14,7 @@ Testing Library, and Playwright infrastructure. Region generation uses
 
 ## Commands
 
-Run from the repository root. Supported Node.js is 22.12+ on the 22 major
+Run from the repository root. Supported Node.js is 22.13+ on the 22 major
 (`package.json` `engines`); CI uses Node 22, `.nvmrc` and Netlify use 22.22.0.
 Install clean checkouts with `npm ci`.
 

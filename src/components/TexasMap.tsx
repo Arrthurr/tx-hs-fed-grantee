@@ -105,9 +105,6 @@ const TexasMap: React.FC<TexasMapProps> = ({
   // useCallback dep chain.
   const regionOverlaysRef = useRef<google.maps.Data[]>([]);
 
-  // State for map loading
-  const [mapLoaded, setMapLoaded] = useState(false);
-
   const handleSelectDetails = useCallback((data: Selection, trigger?: HTMLElement) => {
     const active = trigger ?? document.activeElement;
     selectionTriggerRef.current = active instanceof HTMLElement && !detailsRef.current?.contains(active) ? active : null;
@@ -217,27 +214,17 @@ const TexasMap: React.FC<TexasMapProps> = ({
   }, [map, layerVisibility.txhsaRegions, txhsaRegions, handleSelectDetails, teardownRegionOverlays]);
 
   /**
-   * Mark the map as ready once the map instance and either programs or
-   * regions are available. Regions can be empty if the layer is off; we
-   * don't want to gate the map on overlay data.
+   * Synchronize overlays with the current map, visibility and data. The
+   * renderer already handles a missing map; no separate ready state is needed.
    */
   useEffect(() => {
-    if (map && !mapLoaded) {
-      setMapLoaded(true);
-    }
-  }, [map, mapLoaded]);
-
-  /**
-   * Effect to render/unmount TXHSA region overlays when visibility or data changes.
-   */
-  useEffect(() => {
-    if (mapLoaded) {
-      renderRegionOverlays();
-    }
-  }, [mapLoaded, layerVisibility.txhsaRegions, txhsaRegions, renderRegionOverlays]);
+    renderRegionOverlays();
+  }, [renderRegionOverlays]);
 
   useEffect(() => {
     if (selection?.region && !txhsaRegions.includes(selection.region)) {
+      // Clear stale details through the close path so focus returns after reload.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronize selection and DOM focus with replacement region data.
       handleCloseDetails();
     }
   }, [selection, txhsaRegions, handleCloseDetails]);

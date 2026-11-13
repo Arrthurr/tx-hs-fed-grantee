@@ -43,7 +43,7 @@ agreed requirement.
 
 ## Setup
 
-Requirements: Node.js 22.12 or newer on the 22 major (`package.json`
+Requirements: Node.js 22.13 or newer on the 22 major (`package.json`
 `engines`; CI uses Node 22, `.nvmrc` pins 22.22.0) and npm. Use the lockfile
 for clean checkouts:
 

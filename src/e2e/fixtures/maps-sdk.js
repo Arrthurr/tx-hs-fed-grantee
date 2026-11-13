@@ -77,7 +77,11 @@
       super();
       this.element = document.createElement('button');
       this.dataset = this.element.dataset;
-      this.element.addEventListener('click', () => { this.emit('click', {}); this.emit('gmp-click', {}); });
+      this.element.addEventListener('click', () => {
+        // Clusterer uses Maps events; the React wrapper uses DOM gmp-click.
+        this.emit('click', {});
+        this.element.dispatchEvent(new Event('gmp-click'));
+      });
       Object.assign(this, options);
     }
     set map(map) { this._map = map; if (map) map.div.append(this.element); else this.element.remove(); }

@@ -21,7 +21,7 @@ Google Cloud project; that access must be confirmed separately.
 
 ## Build environment
 
-- Node.js 22.12+ on the 22 major (`package.json` `engines`), CI on Node 22,
+- Node.js 22.13+ on the 22 major (`package.json` `engines`), CI on Node 22,
   `.nvmrc` 22.22.0, Netlify `NODE_VERSION` 22.22.0 (`netlify.toml`).
 - Install from the lockfile with `npm ci`.
 - Configure variables from `.env.example` as Netlify environment variables

@@ -46,7 +46,7 @@ const useMapDataInternal = () => {
     setLayerVisibility(prev => ({ ...prev, [layer]: !prev[layer] }));
   }, []);
 
-  const loadHeadStartPrograms = useCallback(async (automaticRetry = false) => {
+  const loadHeadStartPrograms = useCallback(async function loadPrograms(automaticRetry = false) {
     if (retryTimerRef.current !== null) {
       clearTimeout(retryTimerRef.current);
       retryTimerRef.current = null;
@@ -75,7 +75,7 @@ const useMapDataInternal = () => {
       try {
         programsData = await response.json();
       } catch (parseError) {
-        throw new Error(`Failed to parse Head Start programs data: ${parseError instanceof Error ? parseError.message : 'Invalid JSON'}`);
+        throw new Error(`Failed to parse Head Start programs data: ${parseError instanceof Error ? parseError.message : 'Invalid JSON'}`, { cause: parseError });
       }
 
       if (!Array.isArray(programsData)) {
@@ -107,7 +107,7 @@ const useMapDataInternal = () => {
       if (programsRetryRef.current < MAX_RETRY_ATTEMPTS) {
         const attempt = programsRetryRef.current;
         programsRetryRef.current += 1;
-        retryTimerRef.current = setTimeout(() => loadHeadStartPrograms(true), 1000 * Math.pow(2, attempt));
+        retryTimerRef.current = setTimeout(() => loadPrograms(true), 1000 * Math.pow(2, attempt));
       }
     } finally {
       clearTimeout(timeoutId);

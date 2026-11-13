@@ -35,7 +35,8 @@ The double implements only what `@vis.gl/react-google-maps` and
 `@googlemaps/markerclusterer` call: `OverlayView` (with enumerable prototype
 methods, because the clusterer copies them with `for...in`), `LatLngBounds`,
 `event.trigger`, `Map.getProjection` and an `AdvancedMarkerElement` that
-emits both `click` and `gmp-click`. `Map.fitBounds` records each call in
+emits a Maps `click` for the clusterer and dispatches a DOM `gmp-click` for
+React wrapper marker selection. `Map.fitBounds` records each call in
 `window.__mapsSdkFitBoundsCalls` and settles on a fixed zoom of 6. It has
 no projection, so clustering follows that zoom, and cluster clicks do not
 really zoom. It does not show real SDK transfer cost; see
