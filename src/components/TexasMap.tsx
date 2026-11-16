@@ -161,6 +161,11 @@ const TexasMap: React.FC<TexasMapProps> = ({
     handleSelectDetails({ program });
   }, [handleSelectDetails]);
 
+  const handleSelectRegionButton = useCallback((region: TxhsaRegion, trigger: HTMLButtonElement) => {
+    handleSelectDetails({ region }, trigger);
+    map?.fitBounds(region.bounds, TEXAS_BOUNDS_PADDING);
+  }, [handleSelectDetails, map]);
+
   const handleShowAllTexas = useCallback(() => {
     map?.fitBounds(TEXAS_BOUNDS, TEXAS_BOUNDS_PADDING);
   }, [map]);
@@ -446,7 +451,7 @@ const TexasMap: React.FC<TexasMapProps> = ({
                   type="button"
                   aria-label={`View ${region.name} region`}
                   aria-current={selection?.region === region ? true : undefined}
-                  onClick={event => handleSelectDetails({ region }, event.currentTarget)}
+                  onClick={event => handleSelectRegionButton(region, event.currentTarget)}
                   className="min-h-[44px] rounded-lg border border-tx-gray-200 bg-white text-sm font-medium text-tx-gray-800 hover:bg-tx-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-tx-blue-600"
                   style={{ borderBottomColor: `var(--txhsa-${region.name.toLowerCase()})`, borderBottomWidth: 3 }}
                 >

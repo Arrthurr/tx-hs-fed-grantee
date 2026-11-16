@@ -73,4 +73,6 @@ export interface TxhsaRegion {
   feature: TxhsaRegionFeature;
   /** Geographic centroid used for label / fitBounds positioning */
   center: google.maps.LatLngLiteral;
+  /** Extent of all polygons; the camera fits it when the region is chosen */
+  bounds: google.maps.LatLngBoundsLiteral;
 }

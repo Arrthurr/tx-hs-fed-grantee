@@ -195,5 +195,7 @@ describe('processTxhsaRegion', () => {
     // Should land near the larger landmass, not the island near (0,0).
     expect(region.center.lat).toBeGreaterThan(15);
     expect(region.center.lng).toBeGreaterThan(15);
+    // Bounds keep the island in view, unlike the centroid.
+    expect(region.bounds).toEqual({ west: 0, east: 22, south: 0, north: 22 });
   });
 });

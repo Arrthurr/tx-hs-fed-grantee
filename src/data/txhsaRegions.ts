@@ -85,6 +85,19 @@ const computeCenter = (feature: TxhsaRegionFeature): google.maps.LatLngLiteral =
   return { lat: sumLat / chosen.length, lng: sumLng / chosen.length };
 };
 
+/** Bounding box of every ring in every polygon, so disconnected parts stay in view. */
+const computeBounds = (feature: TxhsaRegionFeature): google.maps.LatLngBoundsLiteral => {
+  const polygons = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+  const bounds = { west: Infinity, east: -Infinity, south: Infinity, north: -Infinity };
+  for (const [lng, lat] of polygons.flat(2)) {
+    bounds.west = Math.min(bounds.west, lng);
+    bounds.east = Math.max(bounds.east, lng);
+    bounds.south = Math.min(bounds.south, lat);
+    bounds.north = Math.max(bounds.north, lat);
+  }
+  return bounds;
+};
+
 /**
  * Turn a validated TxhsaRegionFeature into the runtime TxhsaRegion object the
  * map components use.
@@ -93,4 +106,5 @@ export const processTxhsaRegion = (feature: TxhsaRegionFeature): TxhsaRegion => 
   name: feature.properties.name,
   feature,
   center: computeCenter(feature),
+  bounds: computeBounds(feature),
 });

@@ -393,19 +393,23 @@ describe('TexasMap Component', () => {
         },
       },
       center: { lat: 30.5, lng: -99.5 },
+      bounds: { west: -100, east: -99, south: 30, north: 31 },
     });
 
     const fourRegions = [region('West'), region('North'), region('East'), region('South')];
 
-    test('region buttons open details without polygon clicks or enabling overlays', async () => {
+    test('region buttons zoom to the region and open details without polygon clicks or enabling overlays', async () => {
+      const southBounds = { west: -100.8, east: -96.9, south: 25.8, north: 29.9 };
       mockUseMapData.mockReturnValue({
-        ...mockUseMapData(), txhsaRegions: fourRegions,
+        ...mockUseMapData(), txhsaRegions: [region('West'), region('North'), region('East'), { ...region('South'), bounds: southBounds }],
         regionProgramCounts: { West: 0, North: 2, East: 1, South: 7 },
       });
       render(<TexasMapWithProvider />);
       const button = screen.getByRole('button', { name: 'View South region' });
       screen.getByRole('textbox').focus();
       fireEvent.click(button);
+      const { useMap } = require('@vis.gl/react-google-maps');
+      expect(useMap().fitBounds).toHaveBeenCalledWith(southBounds, 24);
       expect(await screen.findByRole('region', { name: 'South' })).toHaveTextContent('7 listed locations');
       expect(screen.getByRole('heading', { name: 'South' })).toHaveFocus();
       expect(mockUseMapData().toggleLayer).not.toHaveBeenCalled();
