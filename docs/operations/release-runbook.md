@@ -129,7 +129,7 @@ After each deploy:
 3. Search for a known location (for example `Tyler`), open its details, close
    them and confirm focus returns.
 4. Toggle **TXHSA Regions**; four overlays and region buttons/details appear
-   with counts West 14, North 23, East 28, South 20.
+   with counts West 14, North 24, East 27, South 20.
 5. The browser console and page source contain no credentials beyond the
    intentionally public Maps browser key; do not paste key values, credential
    URLs or unredacted HAR files into issues or logs.

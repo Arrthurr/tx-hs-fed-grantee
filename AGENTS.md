@@ -139,8 +139,8 @@ The build has three layers:
 
 Use overrides sparingly for deliberate, reviewable county-level exceptions.
 Current overrides assign Houston, Shelby, Nacogdoches, Polk, San Jacinto,
-Smith, Trinity, Jefferson, Orange, Angelina, San Augustine, Sabine, Tyler,
-Jasper, Newton, and Hardin to East.
+Trinity, Jefferson, Orange, Angelina, San Augustine, Sabine, Tyler, Jasper,
+Newton, and Hardin to East.
 
 County names must match the source's `COUNTY` property with trailing
 `" County"` removed and whitespace trimmed. Use `San Jacinto` and `La Salle`,

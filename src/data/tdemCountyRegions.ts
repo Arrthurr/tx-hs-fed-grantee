@@ -110,7 +110,6 @@ export const txhsaCountyOverrides: Record<string, TxhsaRegionName> = {
   Nacogdoches: 'East',
   Polk: 'East',
   'San Jacinto': 'East',
-  Smith: 'East',
   Trinity: 'East',
   Jefferson: 'East',
   Orange: 'East',

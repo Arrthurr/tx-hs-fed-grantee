@@ -93,8 +93,8 @@ The subsequent repository change
 [85285bc](https://github.com/Arrthurr/tx-hs-fed-grantee/commit/85285bc83155e0e20bd5b461c1e13adcd02f4f84)
 adds Houston, San Jacinto, Smith and Trinity to the East overrides. Comparing
 the before/after geometry against the unchanged location source moves Tyler
-ISD (807 W Glenwood Blvd, Tyler) from North to East. The current reviewed
-location totals are West 14, North 23, East 28 and South 20 (85 total).
+ISD (807 W Glenwood Blvd, Tyler) from North to East. Location totals after
+that change were West 14, North 23, East 28 and South 20 (85 total).
 These additional overrides likewise have no documented external TXHSA approval.
 
 A later change adds Angelina, San Augustine, Sabine, Tyler, Jasper, Newton and
@@ -103,6 +103,12 @@ contiguous from Shelby and Nacogdoches to Jefferson and Orange along the
 Louisiana border. Comparing before/after geometry against the unchanged
 location source moves no listed location; the totals above are unchanged.
 This owner request likewise has no documented external TXHSA approval.
+
+A subsequent owner request removes the Smith override, returning Smith County
+to North through its default TDEM region 3 grouping. This removes the
+isolated East area inside North and moves Tyler ISD (807 W Glenwood Blvd,
+Tyler) from East back to North. The current reviewed location totals are
+West 14, North 24, East 27 and South 20 (85 total).
 
 `npm run build:regions` dissolves county polygons using the locked Turf version.
 Counts use each distinct listed location's coordinates, not address/county text.
