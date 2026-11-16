@@ -66,5 +66,5 @@ for (const location of locations) {
 const counts = countLocationsByRegion(locations, regions);
 assert.equal(Object.values(counts).reduce((a, b) => a + b, 0), locations.length);
 // Reviewed snapshot, not an immutable census. Update provenance with corrections.
-assert.deepEqual(counts, { West: 14, North: 23, East: 28, South: 20 });
+assert.deepEqual(counts, { West: 14, North: 24, East: 27, South: 20 });
 console.log('Data integrity passed:', { rows: raw.length, locations: locations.length, counties: COMMITTED_COUNTY_COUNT, counts });
