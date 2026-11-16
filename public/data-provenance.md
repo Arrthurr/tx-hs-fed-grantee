@@ -97,6 +97,13 @@ ISD (807 W Glenwood Blvd, Tyler) from North to East. The current reviewed
 location totals are West 14, North 23, East 28 and South 20 (85 total).
 These additional overrides likewise have no documented external TXHSA approval.
 
+A later change adds Angelina, San Augustine, Sabine, Tyler, Jasper, Newton and
+Hardin to the East overrides, filling the Deep East Texas area so East is
+contiguous from Shelby and Nacogdoches to Jefferson and Orange along the
+Louisiana border. Comparing before/after geometry against the unchanged
+location source moves no listed location; the totals above are unchanged.
+This owner request likewise has no documented external TXHSA approval.
+
 `npm run build:regions` dissolves county polygons using the locked Turf version.
 Counts use each distinct listed location's coordinates, not address/county text.
 Outer polygon boundaries are included, holes and their boundaries excluded.

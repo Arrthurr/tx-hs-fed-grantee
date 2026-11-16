@@ -114,4 +114,13 @@ export const txhsaCountyOverrides: Record<string, TxhsaRegionName> = {
   Trinity: 'East',
   Jefferson: 'East',
   Orange: 'East',
+  // Fill the Deep East Texas pocket so East reaches the Louisiana border
+  // and joins Shelby/Nacogdoches to the main East region.
+  Angelina: 'East',
+  'San Augustine': 'East',
+  Sabine: 'East',
+  Tyler: 'East',
+  Jasper: 'East',
+  Newton: 'East',
+  Hardin: 'East',
 };
