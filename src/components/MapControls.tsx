@@ -39,7 +39,7 @@ const MapControls: React.FC<MapControlsProps> = ({
           <button
             type="button"
             onClick={() => onToggleLayer('programs')}
-            className={`p-3 min-h-[44px] hover:bg-tx-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-tx-blue-600 border-b border-tx-gray-100 w-full flex items-center gap-3 text-left ${layerVisibility.programs ? 'bg-headstart-accent' : ''}`}
+            className={`p-3 min-h-[44px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-tx-blue-600 border-b border-tx-gray-100 w-full flex items-center gap-3 text-left ${layerVisibility.programs ? 'bg-headstart-accent hover:bg-headstart-accent' : 'hover:bg-tx-gray-50'}`}
             title="Toggle Head Start Programs"
             aria-label="Toggle Head Start programs layer"
             aria-pressed={layerVisibility.programs}
@@ -54,7 +54,7 @@ const MapControls: React.FC<MapControlsProps> = ({
           <button
             type="button"
             onClick={() => onToggleLayer('txhsaRegions')}
-            className={`p-3 min-h-[44px] hover:bg-tx-gray-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-tx-blue-600 disabled:opacity-60 w-full flex items-center gap-3 text-left ${layerVisibility.txhsaRegions ? 'bg-tx-gray-100' : ''}`}
+            className={`p-3 min-h-[44px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-tx-blue-600 disabled:opacity-60 w-full flex items-center gap-3 text-left ${layerVisibility.txhsaRegions ? 'bg-headstart-accent hover:bg-headstart-accent' : 'hover:bg-tx-gray-50'}`}
             title="Toggle TXHSA Regions"
             aria-label="Toggle TXHSA Regions layer"
             aria-pressed={layerVisibility.txhsaRegions}

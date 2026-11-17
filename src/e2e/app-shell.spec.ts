@@ -5,6 +5,31 @@ test.beforeEach(async ({ page }) => {
   await interceptMapsSdk(page);
 });
 
+test('layer highlights update while hovered and persist after the pointer leaves', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#initial-loader')).toHaveCount(0);
+  if (await page.locator('details').getAttribute('open') === null) await page.locator('summary').click();
+
+  for (const name of ['Toggle Head Start programs layer', 'Toggle TXHSA Regions layer']) {
+    const toggle = page.getByRole('button', { name, exact: true });
+    await expect(toggle).toBeEnabled();
+    // Start off, regardless of the layer's default, then toggle without moving away.
+    if (await toggle.getAttribute('aria-pressed') === 'true') await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await toggle.hover();
+    await expect(toggle).toHaveCSS('background-color', 'rgb(249, 250, 251)');
+    const offColor = await toggle.evaluate(el => getComputedStyle(el).backgroundColor);
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect.soft(toggle).toHaveCSS('background-color', 'rgb(209, 250, 229)');
+    await page.locator('summary').hover();
+    await expect.soft(toggle).toHaveCSS('background-color', 'rgb(209, 250, 229)');
+    await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(toggle).toHaveCSS('background-color', offColor);
+  }
+});
+
 test('directory chrome, committed search, details and default layers initialize', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Texas Head Start Location Directory' })).toBeVisible();
